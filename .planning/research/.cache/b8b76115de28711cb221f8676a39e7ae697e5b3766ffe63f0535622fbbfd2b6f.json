@@ -1,0 +1,1 @@
+{"content":"EF Core 10.0.10 is the latest stable, LTS until Nov 2028. Must match .NET 10 runtime version exactly. New features: named query filters, JSON column support for SQL Server, vector search. EF Core 11 preview available but not for production.","source":"web","provider":"context7","confidence":"HIGH","fetched_at":"2026-07-18T18:22:27.155Z","ttl":86400000,"kind":"docs"}
