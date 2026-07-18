@@ -1,0 +1,39 @@
+@model PetPlatform.Host.MVC.Areas.Admin.Controllers.AddClaimViewModel
+
+@{
+    ViewData["Title"] = $"Add Permission: {Model.RoleName}";
+}
+
+<div class="max-w-lg">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Add Permission Claim to @Model.RoleName</h2>
+        </div>
+        <form asp-action="AddClaim" asp-route-roleId="@Model.RoleId" method="post" class="px-6 py-4 space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="All" class="text-red-600 text-sm"></div>
+
+            <div>
+                <label asp-for="ClaimValue" class="block text-sm font-medium text-gray-700">Permission Value</label>
+                <input asp-for="ClaimValue" placeholder="e.g. Users.View"
+                       class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <span asp-validation-for="ClaimValue" class="text-red-600 text-xs"></span>
+                <p class="mt-1 text-xs text-gray-500">
+                    Common permissions: Users.View, Users.Manage, Roles.Create, Roles.Assign, Pets.Manage
+                </p>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                    Add Permission
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.RoleId"
+                   class="px-4 py-2 border rounded text-sm hover:bg-gray-50">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

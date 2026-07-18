@@ -1,0 +1,42 @@
+@model PetPlatform.Host.MVC.Areas.Admin.Controllers.CreateRoleViewModel
+
+@{
+    ViewData["Title"] = "Create Role";
+}
+
+<div class="max-w-lg">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Create New Role</h2>
+        </div>
+        <form asp-action="Create" method="post" class="px-6 py-4 space-y-4">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="All" class="text-red-600 text-sm"></div>
+
+            <div>
+                <label asp-for="Name" class="block text-sm font-medium text-gray-700">Name</label>
+                <input asp-for="Name"
+                       class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <span asp-validation-for="Name" class="text-red-600 text-xs"></span>
+            </div>
+
+            <div>
+                <label asp-for="Description" class="block text-sm font-medium text-gray-700">Description</label>
+                <textarea asp-for="Description" rows="3"
+                          class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                    Create Role
+                </button>
+                <a asp-action="Index"
+                   class="px-4 py-2 border rounded text-sm hover:bg-gray-50">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,70 @@
+@model PetPlatform.Host.MVC.Areas.Admin.Controllers.AssignRoleViewModel
+
+@{
+    ViewData["Title"] = $"Assign Role: {Model.UserEmail}";
+}
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Manage Roles for @Model.UserEmail</h2>
+        </div>
+        <div class="px-6 py-4 space-y-6">
+            <!-- Current Roles -->
+            <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-2">Current Roles</h3>
+                @if (Model.CurrentRoles.Any())
+                {
+                    <div class="space-y-2">
+                        @foreach (var role in Model.CurrentRoles)
+                        {
+                            <div class="flex items-center justify-between bg-gray-50 rounded px-4 py-2">
+                                <span class="font-medium text-gray-700">@role</span>
+                                <form asp-action="RemoveRole" asp-route-id="@Model.UserId" asp-route-role="@role" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="text-red-600 hover:underline text-sm"
+                                            onclick="return confirm('Remove this role?')">
+                                        Remove
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-gray-500 text-sm">No roles assigned</p>
+                }
+            </div>
+
+            <!-- Add Role -->
+            @if (Model.AvailableRoles.Any())
+            {
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 mb-2">Add Role</h3>
+                    <form asp-action="AssignRole" asp-route-id="@Model.UserId" method="post" class="flex gap-3">
+                        @Html.AntiForgeryToken()
+                        <select name="role" class="flex-1 border border-gray-300 rounded px-3 py-2 text-sm">
+                            <option value="">Select a role...</option>
+                            @foreach (var role in Model.AvailableRoles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                            Add
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200">
+            <a asp-action="Details" asp-route-id="@Model.UserId"
+               class="px-4 py-2 border rounded text-sm hover:bg-gray-50">
+                Back to User Details
+            </a>
+        </div>
+    </div>
+</div>

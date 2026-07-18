@@ -1,0 +1,50 @@
+@model List<PetPlatform.Host.MVC.Areas.Admin.Controllers.RoleListItemViewModel>
+
+@{
+    ViewData["Title"] = "Role Management";
+}
+
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-800">All Roles</h2>
+        <a asp-action="Create"
+           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+            Create New Role
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="bg-gray-50 text-gray-600">
+                <tr>
+                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">Description</th>
+                    <th class="px-6 py-3">Permissions</th>
+                    <th class="px-6 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @foreach (var role in Model)
+                {
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">@role.Name</td>
+                        <td class="px-6 py-4 text-gray-600">@(string.IsNullOrEmpty(role.Description) ? "—" : role.Description)</td>
+                        <td class="px-6 py-4 text-gray-600">@role.PermissionCount</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <a asp-action="Details" asp-route-id="@role.Id"
+                                   class="text-blue-600 hover:underline">Details</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Count == 0)
+    {
+        <div class="px-6 py-12 text-center text-gray-500">
+            No roles found. Create a new role to get started.
+        </div>
+    }
+</div>

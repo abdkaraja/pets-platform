@@ -1,0 +1,98 @@
+@model PetPlatform.Host.MVC.Areas.Admin.Controllers.UserDetailViewModel
+
+@{
+    ViewData["Title"] = $"User: {Model.Email}";
+}
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">User Details</h2>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-500">Email</label>
+                <div class="mt-1 text-gray-900">@Model.Email</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-500">Username</label>
+                <div class="mt-1 text-gray-900">@Model.UserName</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-500">Created</label>
+                <div class="mt-1 text-gray-900">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-500">Status</label>
+                <div class="mt-1">
+                    @if (Model.IsLockedOut)
+                    {
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Locked
+                        </span>
+                        @if (Model.LockoutEnd.HasValue)
+                        {
+                            <span class="text-sm text-gray-500 mr-2">
+                                (until @Model.LockoutEnd.Value.ToString("yyyy-MM-dd HH:mm"))
+                            </span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                        </span>
+                    }
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-500 mb-2">Roles</label>
+                @if (Model.Roles.Any())
+                {
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var role in Model.Roles)
+                        {
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                @role
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-gray-500 text-sm">No roles assigned</p>
+                }
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
+            @if (Model.IsLockedOut)
+            {
+                <form asp-action="Activate" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                        Activate Account
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="Deactivate" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                            onclick="return confirm('Are you sure you want to deactivate this user?')">
+                        Deactivate Account
+                    </button>
+                </form>
+            }
+            <a asp-action="AssignRole" asp-route-id="@Model.Id"
+               class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">
+                Assign Role
+            </a>
+            <a asp-action="Index" class="px-4 py-2 border rounded text-sm hover:bg-gray-50">
+                Back to List
+            </a>
+        </div>
+    </div>
+</div>
