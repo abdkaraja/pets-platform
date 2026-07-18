@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PetPlatform.Application/PetPlatform.Application.csproj" />
+    <Project Path="src/PetPlatform.Domain/PetPlatform.Domain.csproj" />
+    <Project Path="src/PetPlatform.Host.MVC/PetPlatform.Host.MVC.csproj" />
+    <Project Path="src/PetPlatform.Infrastructure/PetPlatform.Infrastructure.csproj" />
+  </Folder>
+</Solution>
