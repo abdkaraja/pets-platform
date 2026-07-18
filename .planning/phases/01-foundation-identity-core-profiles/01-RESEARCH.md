@@ -703,19 +703,13 @@ public class EmailSender : IEmailSender<ApplicationUser>
 ## Open Questions
 
 1. **SQL Server connection string:** Where is the SQL Server instance running? LocalDB, Docker, or remote?
-   - What we know: Project requires SQL Server. .NET 10 SDK is available locally.
-   - What's unclear: Whether SQL Server is already installed/configured.
-   - Recommendation: Use LocalDB for development (`Server=(localdb)\\mssqllocaldb;Database=PetPlatform;...`). Planner should verify SQL Server availability or include a SQLite fallback.
+   - **(RESOLVED)** — Using LocalDB for development: `Server=(localdb)\\mssqllocaldb;Database=PetPlatform;Trusted_Connection=True;MultipleActiveResultSets=true` configured in Plan 01 Task 2 appsettings.json. SQLite fallback documented in Environment Availability table if LocalDB is unavailable.
 
 2. **Arabic RTL support in Phase 1:** The PROJECT.md says "Arabic only for v1." Should Tailwind RTL be configured from Phase 1?
-   - What we know: Tailwind v4 has native RTL support via `rtl:` variant.
-   - What's unclear: Whether Phase 1 views must be RTL-ready or if this is deferred.
-   - Recommendation: Add `dir="rtl"` to `_Layout.cshtml` in Phase 1. RTL-aware Tailwind classes can be added incrementally.
+   - **(RESOLVED)** — `dir="rtl"` added to `_Layout.cshtml` html tag in Plan 01 Task 2. Tailwind v4 has native RTL support via `rtl:` variant — RTL-aware classes applied incrementally as views are created. Full Arabic typography and layout polish deferred to later phases.
 
 3. **Identity scaffold scope:** Which Identity pages need customization in Phase 1?
-   - What we know: AUTH-01 through AUTH-08 require register, login, confirm email, forgot password, reset password, account lockout.
-   - What's unclear: Whether two-factor auth or external login providers are in scope.
-   - Recommendation: Scaffold only Register, Login, ConfirmEmail, ForgotPassword, ResetPassword, Logout, and Manage/Index. Skip 2FA and external login for Phase 1.
+   - **(RESOLVED)** — Using `.AddDefaultUI()` with `Microsoft.AspNetCore.Identity.UI` package for default Identity Razor Pages (Register, Login, ConfirmEmail, ForgotPassword, ResetPassword, Logout). Identity Area `_ViewImports.cshtml` and `_ViewStart.cshtml` created to use shared Tailwind layout. Custom-styled Register/Login pages with Arabic labels planned for a future UI polish phase. Two-factor authentication and external login providers are out of scope for Phase 1.
 
 ## Environment Availability
 
