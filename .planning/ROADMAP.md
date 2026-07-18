@@ -30,7 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can view and edit their customer profile (address, phone, city, notification preferences) via a My Account page
   4. Admin can view all users, activate/deactivate accounts, assign roles, create roles, and assign permissions to roles
   5. Four roles (Admin, Customer, Vet, ServiceProvider) exist with claims-based permissions enforced via policy-based authorization
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Solution scaffold, domain entities, Identity + auth policies, seed data
+- [ ] 01-02-PLAN.md — Pet CRUD with photo upload, customer profile, My Account page
+- [ ] 01-03-PLAN.md — Admin dashboard: user management, role management, permission assignment
 **UI hint**: yes
 
 ### Phase 2: E-Commerce Module
