@@ -12,7 +12,7 @@ The Pet Platform delivers a comprehensive pet lifecycle management system in 5 p
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation, Identity & Core Profiles** - Clean Architecture scaffold, ASP.NET Core Identity with 4 roles + claims, pet profiles, customer accounts, admin dashboard foundation
+- [x] **Phase 1: Foundation, Identity & Core Profiles** - Clean Architecture scaffold, ASP.NET Core Identity with 4 roles + claims, pet profiles, customer accounts, admin dashboard foundation
 - [ ] **Phase 2: E-Commerce Module** - Product catalog, shopping cart, checkout with payment, order management, inventory
 - [ ] **Phase 3: Adoption Module** - Adoptable pet listings, search/filter, adoption applications, shelter review workflow
 - [ ] **Phase 4: Lost Pets Module** - Report lost/found pets, search by species/breed/location, basic alerts for matches
@@ -32,9 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Four roles (Admin, Customer, Vet, ServiceProvider) exist with claims-based permissions enforced via policy-based authorization
 **Plans**: 3 plans
 Plans:
-- [ ] 01-01-PLAN.md — Solution scaffold, domain entities, Identity + auth policies, seed data
-- [ ] 01-02-PLAN.md — Pet CRUD with photo upload, customer profile, My Account page
-- [ ] 01-03-PLAN.md — Admin dashboard: user management, role management, permission assignment
+- [x] 01-01-PLAN.md — Solution scaffold, domain entities, Identity + auth policies, seed data
+- [x] 01-02-PLAN.md — Pet CRUD with photo upload, customer profile, My Account page
+- [x] 01-03-PLAN.md — Admin dashboard: user management, role management, permission assignment
 **UI hint**: yes
 
 ### Phase 2: E-Commerce Module
@@ -90,7 +90,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Identity & Core Profiles | 0/0 | Not started | - |
+| 1. Foundation, Identity & Core Profiles | 3/3 | Complete | 2026-07-18 |
 | 2. E-Commerce Module | 0/0 | Not started | - |
 | 3. Adoption Module | 0/0 | Not started | - |
 | 4. Lost Pets Module | 0/0 | Not started | - |
