@@ -1,0 +1,49 @@
+@model PetPlatform.Application.DTOs.UpdateCustomerProfileDto
+@{
+    ViewData["Title"] = "Edit Profile";
+}
+
+<h1 class="text-2xl font-bold mb-6">Edit Profile</h1>
+
+<div class="bg-white rounded-lg shadow p-6 max-w-lg">
+    <form asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-red-500 mb-4"></div>
+
+        <div class="mb-4">
+            <label asp-for="FullName" class="block font-semibold text-gray-600 mb-1">Full Name</label>
+            <input asp-for="FullName" class="w-full border border-gray-300 rounded px-3 py-2" />
+            <span asp-validation-for="FullName" class="text-red-500 text-sm"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="Address" class="block font-semibold text-gray-600 mb-1">Address</label>
+            <input asp-for="Address" class="w-full border border-gray-300 rounded px-3 py-2" />
+            <span asp-validation-for="Address" class="text-red-500 text-sm"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="Phone" class="block font-semibold text-gray-600 mb-1">Phone</label>
+            <input asp-for="Phone" class="w-full border border-gray-300 rounded px-3 py-2" />
+            <span asp-validation-for="Phone" class="text-red-500 text-sm"></span>
+        </div>
+
+        <div class="mb-4">
+            <label asp-for="City" class="block font-semibold text-gray-600 mb-1">City</label>
+            <input asp-for="City" class="w-full border border-gray-300 rounded px-3 py-2" />
+            <span asp-validation-for="City" class="text-red-500 text-sm"></span>
+        </div>
+
+        <div class="mb-6">
+            <label class="flex items-center">
+                <input asp-for="NotificationPreferences" type="checkbox" class="mr-2" />
+                <span class="font-semibold text-gray-600">Enable Notifications</span>
+            </label>
+        </div>
+
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Save Changes
+        </button>
+        <a asp-action="Index" class="ml-4 text-gray-600 hover:text-gray-800">Cancel</a>
+    </form>
+</div>

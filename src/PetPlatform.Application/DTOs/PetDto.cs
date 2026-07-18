@@ -24,6 +24,7 @@ public class CreatePetDto
     public int Age { get; set; }
     public decimal Weight { get; set; }
     public IFormFile? Photo { get; set; }
+    public string? PhotoPath { get; set; }
 }
 
 public class UpdatePetDto

@@ -1,0 +1,7 @@
+@using Microsoft.AspNetCore.Identity
+@using PetPlatform.Host.MVC
+@using PetPlatform.Host.MVC.Models
+@using PetPlatform.Infrastructure.Identity
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager

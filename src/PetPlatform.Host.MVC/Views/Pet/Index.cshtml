@@ -1,0 +1,37 @@
+@model IEnumerable<PetPlatform.Application.DTOs.PetDto>
+@{
+    ViewData["Title"] = "Browse Pets";
+}
+
+<h1 class="text-2xl font-bold mb-6">Browse Pets</h1>
+
+@if (!Model.Any())
+{
+    <div class="bg-white rounded-lg shadow p-8 text-center">
+        <p class="text-gray-500 text-lg">No pets have been added yet.</p>
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @foreach (var pet in Model)
+        {
+            <a asp-action="Details" asp-route-id="@pet.Id" class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                @if (!string.IsNullOrEmpty(pet.PhotoPath))
+                {
+                    <img src="@pet.PhotoPath" alt="@pet.Name" class="w-full h-48 object-cover" />
+                }
+                else
+                {
+                    <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                        <span class="text-gray-400 text-4xl">No Photo</span>
+                    </div>
+                }
+                <div class="p-4">
+                    <h3 class="font-bold text-lg">@pet.Name</h3>
+                    <p class="text-gray-600">@pet.Species &mdash; @(pet.Breed ?? "Mixed")</p>
+                </div>
+            </a>
+        }
+    </div>
+}

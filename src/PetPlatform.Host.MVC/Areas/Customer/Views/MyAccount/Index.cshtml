@@ -1,0 +1,37 @@
+@model PetPlatform.Application.DTOs.CustomerProfileDto
+@{
+    ViewData["Title"] = "My Account";
+}
+
+<h1 class="text-2xl font-bold mb-6">My Account</h1>
+
+<div class="bg-white rounded-lg shadow p-6 max-w-lg">
+    <div class="space-y-4">
+        <div>
+            <span class="font-semibold text-gray-600">Full Name:</span>
+            <span class="block mt-1">@Model.FullName</span>
+        </div>
+        <div>
+            <span class="font-semibold text-gray-600">Address:</span>
+            <span class="block mt-1">@(Model.Address ?? "Not set")</span>
+        </div>
+        <div>
+            <span class="font-semibold text-gray-600">Phone:</span>
+            <span class="block mt-1">@(Model.Phone ?? "Not set")</span>
+        </div>
+        <div>
+            <span class="font-semibold text-gray-600">City:</span>
+            <span class="block mt-1">@(Model.City ?? "Not set")</span>
+        </div>
+        <div>
+            <span class="font-semibold text-gray-600">Notification Preferences:</span>
+            <span class="block mt-1">@(Model.NotificationPreferences ? "Enabled" : "Disabled")</span>
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <a asp-action="Edit" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Edit Profile
+        </a>
+    </div>
+</div>

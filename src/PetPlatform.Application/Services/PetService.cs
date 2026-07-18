@@ -44,6 +44,11 @@ public class PetService : IPetService
             age: dto.Age,
             weight: dto.Weight);
 
+        if (!string.IsNullOrEmpty(dto.PhotoPath))
+        {
+            pet.PhotoPath = dto.PhotoPath;
+        }
+
         _context.Pets.Add(pet);
         await _context.SaveChangesAsync();
 
@@ -56,6 +61,14 @@ public class PetService : IPetService
 
         return await _context.Pets
             .Where(p => p.OwnerId == ownerId)
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => MapToDto(p))
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<PetDto>> GetAllAsync()
+    {
+        return await _context.Pets
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => MapToDto(p))
             .ToListAsync();
