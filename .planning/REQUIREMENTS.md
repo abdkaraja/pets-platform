@@ -143,13 +143,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADPT-03 | Phase 3 | Pending |
 | ADPT-04 | Phase 3 | Pending |
 | ADPT-05 | Phase 3 | Pending |
-| LOST-01 | Phase 3 | Pending |
-| LOST-02 | Phase 3 | Pending |
-| LOST-03 | Phase 3 | Pending |
-| MED-01 | Phase 4 | Pending |
-| MED-02 | Phase 4 | Pending |
-| MED-03 | Phase 4 | Pending |
-| MED-04 | Phase 4 | Pending |
+| LOST-01 | Phase 4 | Pending |
+| LOST-02 | Phase 4 | Pending |
+| LOST-03 | Phase 4 | Pending |
+| MED-01 | Phase 5 | Pending |
+| MED-02 | Phase 5 | Pending |
+| MED-03 | Phase 5 | Pending |
+| MED-04 | Phase 5 | Pending |
 | ADMN-01 | Phase 1 | Pending |
 | ADMN-02 | Phase 1 | Pending |
 | ADMN-03 | Phase 1 | Pending |
@@ -163,4 +163,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-18*
-*Last updated: 2026-07-18 after initial definition*
+*Last updated: 2026-07-18 after roadmap creation*
