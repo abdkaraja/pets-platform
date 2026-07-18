@@ -1,5 +1,9 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using PetPlatform.Application.Interfaces;
+using PetPlatform.Application.Services;
+using PetPlatform.Application.Validators;
 using PetPlatform.Infrastructure.Identity;
 using PetPlatform.Infrastructure.Persistence;
 using PetPlatform.Infrastructure.Services;
@@ -39,6 +43,16 @@ builder.Services.AddAuthorizationBuilder()
 
 // ── Email sender (console-log stub for Phase 1) ────────────────────────
 builder.Services.AddScoped(typeof(IEmailSender<>), typeof(EmailSender<>));
+
+// ── Application services ─────────────────────────────────────────────
+builder.Services.AddScoped<IPetService, PetService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IApplicationDbContext>(sp =>
+    sp.GetRequiredService<ApplicationDbContext>());
+
+// ── FluentValidation ─────────────────────────────────────────────────
+builder.Services.AddValidatorsFromAssemblyContaining<CreatePetValidator>();
 
 // ── MVC ─────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();

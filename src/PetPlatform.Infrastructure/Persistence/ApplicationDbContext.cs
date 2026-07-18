@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using PetPlatform.Application.Interfaces;
 using PetPlatform.Domain.Entities;
 using PetPlatform.Infrastructure.Identity;
 
 namespace PetPlatform.Infrastructure.Persistence;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
