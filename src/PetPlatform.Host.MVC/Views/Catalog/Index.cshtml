@@ -1,0 +1,228 @@
+@model PetPlatform.Application.DTOs.PagedResultDto<PetPlatform.Application.DTOs.ProductDto>
+@{
+    ViewData["Title"] = "Shop";
+    var categories = (IEnumerable<PetPlatform.Application.DTOs.CategoryDto>)ViewBag.Categories;
+    var brands = (IEnumerable<PetPlatform.Application.DTOs.BrandDto>)ViewBag.Brands;
+    var currentSearch = (string?)ViewData["Search"];
+    var currentCategoryId = (int?)ViewData["CategoryId"];
+    var currentPetType = (string?)ViewData["PetType"];
+    var currentBrandId = (int?)ViewData["BrandId"];
+    var currentMinPrice = (decimal?)ViewData["MinPrice"];
+    var currentMaxPrice = (decimal?)ViewData["MaxPrice"];
+    var currentSort = (string?)ViewData["Sort"];
+}
+
+<h1 class="text-2xl font-bold mb-6">Shop</h1>
+
+<div class="flex flex-col lg:flex-row gap-6">
+    @* Filter Sidebar *@
+    <aside class="w-full lg:w-60 shrink-0">
+        <div class="bg-white rounded-lg shadow p-4 space-y-4">
+            <form method="get" asp-action="Index" id="filterForm">
+                @* Search *@
+                <div>
+                    <input type="search" name="search" value="@currentSearch" placeholder="Search products..."
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+
+                @* Pet Type *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Pet Type</h3>
+                    <div class="space-y-1">
+                        @foreach (var pt in new[] { "", "Dogs", "Cats", "Birds", "Fish", "Small Animals" })
+                        {
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="radio" name="petType" value="@pt"
+                                       @(string.IsNullOrEmpty(pt) && string.IsNullOrEmpty(currentPetType) || pt == currentPetType ? "checked" : "")
+                                       class="accent-blue-600" onchange="this.form.submit()" />
+                                @(string.IsNullOrEmpty(pt) ? "All" : pt)
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                @* Category *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Category</h3>
+                    <div class="space-y-1 max-h-40 overflow-y-auto">
+                        @foreach (var cat in categories)
+                        {
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" name="categoryId" value="@cat.Id"
+                                       @(currentCategoryId == cat.Id ? "checked" : "")
+                                       class="accent-blue-600" onchange="this.form.submit()" />
+                                @cat.Name
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                @* Price Range *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Price Range</h3>
+                    <div class="flex gap-2">
+                        <input type="number" name="minPrice" value="@currentMinPrice" placeholder="Min"
+                               min="0" step="0.01"
+                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                        <input type="number" name="maxPrice" value="@currentMaxPrice" placeholder="Max"
+                               min="0" step="0.01"
+                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                    </div>
+                </div>
+
+                @* Brand *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Brand</h3>
+                    <div class="space-y-1 max-h-40 overflow-y-auto">
+                        @foreach (var brand in brands)
+                        {
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" name="brandId" value="@brand.Id"
+                                       @(currentBrandId == brand.Id ? "checked" : "")
+                                       class="accent-blue-600" onchange="this.form.submit()" />
+                                @brand.Name
+                            </label>
+                        }
+                    </div>
+                </div>
+
+                <input type="hidden" name="sort" value="@currentSort" />
+                <input type="hidden" name="page" value="1" />
+
+                <div class="pt-2">
+                    <a asp-action="Index" class="block text-center text-sm text-blue-600 hover:text-blue-800 font-bold">
+                        Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </aside>
+
+    @* Product Grid *@
+    <div class="flex-1">
+        @* Sorting *@
+        @{
+            var sortOptions = new (string Value, string Label, bool IsDefault)[] {
+                ("newest", "Sort by: Newest", true),
+                ("price_asc", "Price: Low to High", false),
+                ("price_desc", "Price: High to Low", false),
+                ("name", "Name: A\u2013Z", false)
+            };
+            var sortUrl = Url.Action("Index", new { search=currentSearch, categoryId=currentCategoryId, petType=currentPetType, brandId=currentBrandId, minPrice=currentMinPrice, maxPrice=currentMaxPrice, sort="__VAL__", page=1 });
+        }
+        <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-gray-600">@(Model.TotalCount) products found</span>
+            <select id="sortSelect" onchange="window.location.href=this.value"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                @foreach (var opt in sortOptions)
+                {
+                    var isSelected = (opt.IsDefault && string.IsNullOrEmpty(currentSort)) || currentSort == opt.Value;
+                    var optUrl = sortUrl?.Replace("__VAL__", opt.Value);
+                    if (isSelected)
+                    {
+                        <option value="@optUrl" selected>@opt.Label</option>
+                    }
+                    else
+                    {
+                        <option value="@optUrl">@opt.Label</option>
+                    }
+                }
+            </select>
+        </div>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="bg-white rounded-lg shadow p-12 text-center">
+                <h2 class="text-2xl font-bold mb-2">No products found</h2>
+                <p class="text-gray-600 mb-4">Try adjusting your search or filters, or browse all products.</p>
+                <a asp-action="Index" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                    Clear Filters
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var product in Model.Items)
+                {
+                    <a asp-action="Details" asp-route-id="@product.Id"
+                       class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                        @if (!string.IsNullOrEmpty(product.ImagePath))
+                        {
+                            <img src="@product.ImagePath" alt="@product.Name" class="w-full h-48 object-cover" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                <span class="text-gray-400 text-sm">No Image</span>
+                            </div>
+                        }
+                        <div class="p-4">
+                            <h3 class="text-base font-bold mb-1 line-clamp-2">@product.Name</h3>
+                            <p class="text-xs text-gray-500 mb-2">@product.CategoryName &mdash; @product.BrandName</p>
+                            <div class="flex items-center justify-between">
+                                @if (product.MinVariantPrice == product.MaxVariantPrice)
+                                {
+                                    <span class="text-base font-bold text-gray-900" dir="ltr">$@product.BasePrice.ToString("F2")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-base font-bold text-gray-900" dir="ltr">From $@product.MinVariantPrice.ToString("F2")</span>
+                                }
+
+                                @if (product.TotalStock == 0)
+                                {
+                                    <span class="text-xs text-red-600 font-bold">Out of Stock</span>
+                                }
+                                else if (product.TotalStock <= 5)
+                                {
+                                    <span class="text-xs text-yellow-600">Only @product.TotalStock left</span>
+                                }
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+
+            @* Pagination *@
+            @if (Model.TotalPages > 1)
+            {
+                <div class="flex justify-center gap-2 mt-8">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a asp-action="Index" asp-route-search="@currentSearch" asp-route-categoryId="@currentCategoryId"
+                           asp-route-petType="@currentPetType" asp-route-brandId="@currentBrandId"
+                           asp-route-minPrice="@currentMinPrice" asp-route-maxPrice="@currentMaxPrice"
+                           asp-route-sort="@currentSort" asp-route-page="@(Model.Page - 1)"
+                           class="w-8 h-8 rounded border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50">
+                            &lsaquo;
+                        </a>
+                    }
+
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <a asp-action="Index" asp-route-search="@currentSearch" asp-route-categoryId="@currentCategoryId"
+                           asp-route-petType="@currentPetType" asp-route-brandId="@currentBrandId"
+                           asp-route-minPrice="@currentMinPrice" asp-route-maxPrice="@currentMaxPrice"
+                           asp-route-sort="@currentSort" asp-route-page="@i"
+                           class="w-8 h-8 rounded border text-sm flex items-center justify-center
+                                  @(i == Model.Page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-50")">
+                            @i
+                        </a>
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a asp-action="Index" asp-route-search="@currentSearch" asp-route-categoryId="@currentCategoryId"
+                           asp-route-petType="@currentPetType" asp-route-brandId="@currentBrandId"
+                           asp-route-minPrice="@currentMinPrice" asp-route-maxPrice="@currentMaxPrice"
+                           asp-route-sort="@currentSort" asp-route-page="@(Model.Page + 1)"
+                           class="w-8 h-8 rounded border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50">
+                            &rsaquo;
+                        </a>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

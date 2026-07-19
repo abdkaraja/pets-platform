@@ -1,0 +1,170 @@
+@model PetPlatform.Application.DTOs.ProductDto
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+@* Breadcrumb *@
+<nav class="text-sm text-gray-500 mb-4">
+    <a asp-action="Index" class="hover:text-blue-600">Shop</a>
+    <span class="mx-1">&rsaquo;</span>
+    <span>@Model.CategoryName</span>
+    <span class="mx-1">&rsaquo;</span>
+    <span class="text-gray-900">@Model.Name</span>
+</nav>
+
+<div class="flex flex-col md:flex-row gap-8">
+    @* Product Image *@
+    <div class="max-w-lg shrink-0">
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+            <img src="@Model.ImagePath" alt="@Model.Name" class="w-full h-64 md:h-96 object-cover rounded-lg" />
+        }
+        else
+        {
+            <div class="w-full h-64 md:h-96 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span class="text-gray-400">No Image Available</span>
+            </div>
+        }
+    </div>
+
+    @* Product Info *@
+    <div class="flex-1">
+        <h1 class="text-2xl font-bold mb-1">@Model.Name</h1>
+        <p class="text-sm text-gray-500 mb-4">@Model.CategoryName &rsaquo; @Model.BrandName</p>
+
+        @* Price *@
+        <div id="price-display" class="mb-4">
+            @if (Model.MinVariantPrice == Model.MaxVariantPrice)
+            {
+                <span class="text-2xl font-bold" dir="ltr">$@Model.BasePrice.ToString("F2")</span>
+            }
+            else
+            {
+                <span class="text-2xl font-bold" dir="ltr">From $@Model.MinVariantPrice.ToString("F2")</span>
+            }
+        </div>
+
+        @* Description *@
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p class="text-gray-600 mb-6">@Model.Description</p>
+        }
+
+        <hr class="my-4 border-gray-200" />
+
+        @* Variant Selector *@
+        <div id="variant-selector" class="mb-6">
+            <input type="hidden" id="selectedVariantId" name="selectedVariantId" />
+            <input type="hidden" id="selectedPrice" value="@Model.BasePrice" />
+            <input type="hidden" id="selectedStock" value="@Model.TotalStock" />
+
+            @* This will be populated by JavaScript based on variant data *@
+        </div>
+
+        @* Stock Display *@
+        <div id="stock-display" class="mb-4">
+            @if (Model.TotalStock == 0)
+            {
+                <span class="text-sm text-red-600 font-bold">Out of Stock</span>
+            }
+            else if (Model.TotalStock <= 5)
+            {
+                <span class="text-sm text-yellow-600">Only @Model.TotalStock left in stock</span>
+            }
+            else
+            {
+                <span class="text-sm text-green-600">@Model.TotalStock in stock</span>
+            }
+        </div>
+
+        @* Quantity Selector *@
+        <div id="quantity-section" class="mb-6">
+            <label class="text-sm font-bold text-gray-700 mb-2 block">Quantity</label>
+            <div class="flex items-center gap-2">
+                <button type="button" id="qty-minus"
+                        class="w-10 h-10 rounded border border-gray-300 text-lg font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @(Model.TotalStock == 0 ? "disabled" : "")>
+                    &minus;
+                </button>
+                <input type="number" id="quantity" value="1" min="1" max="@Model.TotalStock"
+                       class="w-16 h-10 border border-gray-300 rounded text-center text-sm"
+                       @(Model.TotalStock == 0 ? "disabled" : "") readonly />
+                <button type="button" id="qty-plus"
+                        class="w-10 h-10 rounded border border-gray-300 text-lg font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @(Model.TotalStock == 0 ? "disabled" : "")>
+                    &plus;
+                </button>
+            </div>
+        </div>
+
+        @* Add to Cart *@
+        <form id="add-to-cart-form" method="post" asp-controller="Cart" asp-action="AddToCart">
+            @Html.AntiForgeryToken()
+            <button type="submit" id="add-to-cart-btn"
+                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    @(Model.TotalStock == 0 ? "disabled" : "")>
+                @(Model.TotalStock == 0 ? "Out of Stock" : "Add to Cart")
+            </button>
+        </form>
+
+        @* Toast notification *@
+        <div id="toast" class="hidden fixed top-4 start-4 bg-green-100 text-green-800 px-4 py-3 rounded-lg shadow-lg text-sm z-50">
+            Added to cart!
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var variantData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Id > 0 ? new object[] { new { ProductId = Model.Id } } : new object[] { }
+    ));
+    var productId = @Model.Id;
+    var basePrice = @Model.BasePrice;
+</script>
+<script>
+$(function() {
+    var quantity = 1;
+    var maxStock = @(Model.TotalStock);
+    var selectedVariantId = null;
+
+    $('#qty-minus').click(function() {
+        if (quantity > 1) {
+            quantity--;
+            $('#quantity').val(quantity);
+        }
+    });
+
+    $('#qty-plus').click(function() {
+        if (quantity < maxStock) {
+            quantity++;
+            $('#quantity').val(quantity);
+        }
+    });
+
+    $('#add-to-cart-form').submit(function(e) {
+        e.preventDefault();
+        var token = $(this).find('input[name="__RequestVerificationToken"]').val();
+        var data = {
+            ProductVariantId: selectedVariantId || 0,
+            Quantity: quantity
+        };
+        $.ajax({
+            url: '/Cart/AddToCart',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            headers: { 'RequestVerificationToken': token },
+            success: function(response) {
+                $('#toast').removeClass('hidden').fadeIn();
+                setTimeout(function() { $('#toast').fadeOut(function() { $(this).addClass('hidden'); }); }, 3000);
+            },
+            error: function(xhr) {
+                var msg = xhr.responseJSON?.message || 'Failed to add to cart';
+                alert(msg);
+            }
+        });
+    });
+});
+</script>
+}

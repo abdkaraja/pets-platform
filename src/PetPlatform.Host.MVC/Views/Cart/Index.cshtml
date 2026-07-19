@@ -1,0 +1,158 @@
+@model PetPlatform.Application.DTOs.CartDto
+@{
+    ViewData["Title"] = "Shopping Cart";
+    var shipping = 5.99m;
+}
+
+<h1 class="text-2xl font-bold mb-6">Shopping Cart</h1>
+
+@if (Model.Items == null || !Model.Items.Any())
+{
+    <div class="bg-white rounded-lg shadow p-12 text-center">
+        <h2 class="text-2xl font-bold mb-2">Your cart is empty</h2>
+        <p class="text-gray-600 mb-4">Looks like you haven't added any products yet.</p>
+        <a asp-controller="Catalog" asp-action="Index"
+           class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+            Browse Products
+        </a>
+    </div>
+}
+else
+{
+    <div class="flex flex-col lg:flex-row gap-6">
+        @* Cart Items *@
+        <div class="flex-1">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="flex items-center gap-4 p-4 border-b border-gray-200" data-cart-item-id="@item.Id">
+                        @* Image *@
+                        @if (!string.IsNullOrEmpty(item.ImagePath))
+                        {
+                            <img src="@item.ImagePath" alt="@item.ProductName" class="w-16 h-16 object-cover rounded shrink-0" />
+                        }
+                        else
+                        {
+                            <div class="w-16 h-16 bg-gray-200 rounded shrink-0 flex items-center justify-center">
+                                <span class="text-gray-400 text-xs">No Image</span>
+                            </div>
+                        }
+
+                        @* Details *@
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-base truncate">@item.ProductName</h3>
+                            <p class="text-sm text-gray-500">@item.VariantDescription</p>
+                            <p class="text-sm text-gray-600" title="Price at time of adding to cart" dir="ltr">
+                                $@item.LockedPrice.ToString("F2") each
+                            </p>
+                        </div>
+
+                        @* Quantity Controls *@
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="updateQuantity(@item.Id, @(item.Quantity - 1))"
+                                    class="w-8 h-8 rounded border border-gray-300 text-sm font-bold hover:bg-gray-50 @(item.Quantity <= 1 ? "opacity-50 cursor-not-allowed" : "")"
+                                    @(item.Quantity <= 1 ? "disabled" : "")>
+                                &minus;
+                            </button>
+                            <span class="w-8 text-center text-sm font-bold" id="qty-@item.Id">@item.Quantity</span>
+                            <button type="button" onclick="updateQuantity(@item.Id, @(item.Quantity + 1))"
+                                    class="w-8 h-8 rounded border border-gray-300 text-sm font-bold hover:bg-gray-50">
+                                &plus;
+                            </button>
+                        </div>
+
+                        @* Item Total + Remove *@
+                        <div class="text-end shrink-0 ms-4">
+                            <p class="font-bold text-base" dir="ltr" id="line-total-@item.Id">$@item.LineTotal.ToString("F2")</p>
+                            <button type="button" onclick="removeItem(@item.Id, '@item.ProductName.Replace("'", "\\'")')"
+                                    class="text-sm text-red-600 hover:text-red-800 mt-1">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Order Summary *@
+        <div class="w-full lg:w-80 shrink-0">
+            <div class="bg-white rounded-lg shadow p-6 lg:sticky lg:top-4">
+                <h2 class="text-lg font-bold mb-4">Order Summary</h2>
+
+                <div class="space-y-3 mb-4">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Subtotal</span>
+                        <span id="summary-subtotal" dir="ltr">$@Model.Subtotal.ToString("F2")</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Shipping</span>
+                        <span dir="ltr">$@shipping.ToString("F2")</span>
+                    </div>
+                </div>
+
+                <hr class="border-gray-200 my-4" />
+
+                <div class="flex justify-between text-2xl font-bold mb-6">
+                    <span>Total</span>
+                    <span id="summary-total" dir="ltr">$@((Model.Subtotal + shipping).ToString("F2"))</span>
+                </div>
+
+                <a asp-controller="Checkout" asp-action="Index"
+                   class="block w-full text-center bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                    Proceed to Checkout
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+    var antiForgeryToken = $('input[name="__RequestVerificationToken"]').val() || '';
+
+    function getAntiForgeryToken() {
+        return $('input[name="__RequestVerificationToken"]').val() || '';
+    }
+
+    function updateQuantity(cartItemId, newQty) {
+        if (newQty < 1) return;
+        $.ajax({
+            url: '/Cart/UpdateQuantity',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ CartItemId: cartItemId, Quantity: newQty }),
+            headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                }
+            },
+            error: function(xhr) {
+                var msg = xhr.responseJSON?.message || 'Failed to update quantity';
+                alert(msg);
+            }
+        });
+    }
+
+    function removeItem(cartItemId, productName) {
+        if (!confirm("Remove '" + productName + "' from your cart?")) return;
+        $.ajax({
+            url: '/Cart/RemoveItem/' + cartItemId,
+            type: 'POST',
+            headers: { 'RequestVerificationToken': getAntiForgeryToken() },
+            success: function(response) {
+                if (response.success) {
+                    if (response.itemCount === 0) {
+                        location.reload();
+                    } else {
+                        location.reload();
+                    }
+                }
+            },
+            error: function() {
+                alert('Failed to remove item');
+            }
+        });
+    }
+</script>
+}
