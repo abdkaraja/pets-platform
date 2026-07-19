@@ -1,10 +1,11 @@
 ---
 phase: 2
 slug: ecommerce-module
-status: draft
+status: approved
 shadcn_initialized: false
 preset: not applicable — ASP.NET Core MVC + Tailwind CSS (not React)
 created: 2026-07-19
+reviewed_at: 2026-07-19
 ---
 
 # Phase 2 — UI Design Contract
@@ -20,7 +21,7 @@ created: 2026-07-19
 | Tool | none (Tailwind CSS v4 utility classes — no component library) |
 | Preset | not applicable |
 | Component library | none — hand-built Razor partials + Tailwind utilities |
-| Icon library | text emoji or inline SVG (no icon library dependency) |
+| Icon library | inline SVG only (no icon library dependency) |
 | Font | System font stack (`font-sans`: system-ui, -apple-system, Segoe UI, sans-serif) |
 | CSS framework | Tailwind CSS v4 via `@import "tailwindcss"` in `wwwroot/css/site.css` |
 | JS framework | jQuery (slim, v3.x) + vanilla JS for Stripe.js integration |
@@ -70,14 +71,17 @@ Standard Tailwind v4 default scale (matches existing Phase 1 usage):
 
 | Role | Tailwind Class | Size | Weight | Line Height | Usage |
 |------|---------------|------|--------|-------------|-------|
-| Display | `text-3xl font-bold` | 30px | 700 | 1.2 | Hero headings (rare — page titles use Heading) |
-| Heading | `text-2xl font-bold` | 24px | 700 | 1.3 | Page titles, section headings |
-| Subheading | `text-xl font-semibold` | 20px | 600 | 1.4 | Card titles, subsection headings, product names |
-| Body | `text-base` | 16px | 400 | 1.5 | Default text, descriptions, form labels |
-| Body-small | `text-sm` | 14px | 400 | 1.5 | Secondary text, timestamps, metadata, table cells |
-| Caption | `text-xs` | 12px | 400 | 1.4 | Badges, helper text, legal text, stock indicators |
+| Heading | `text-2xl font-bold` | 24px | 700 | 1.3 | Page titles, section headings, card titles, product names, cart total, empty state headings |
+| Body | `text-base` | 16px | 400 | 1.5 | Default text, descriptions, form labels, metadata, product card prices |
+| Helper | `text-sm` | 14px | 400 | 1.5 | Sidebar nav, search inputs, pagination, variant buttons, cart item details, error displays, admin table headers, admin buttons, form validation, inline stock editing, field-level errors, date text |
+| Caption | `text-xs` | 12px | 400 | 1.4 | Badges, helper text, legal text, stock indicators, timestamps |
 
-**Font weights used:** 400 (regular), 600 (semibold), 700 (bold) — exactly 3.
+**Font weights used:** 400 (regular), 700 (bold) — exactly 2.
+
+**Size migration notes (from checker audit):**
+- `text-lg` (18px) used for product card prices → **migrated to `text-base` (16px)** — prices use `text-base font-bold` instead
+- `text-xl` (20px) used for cart total and empty state headings → **migrated to `text-2xl` (24px)** — aligns with Heading role
+- `text-sm` (14px) used in 17+ locations across inputs, sidebar nav, pagination, variant buttons, cart details, error displays, admin table headers, form validation, and inline editing — distinct "input/helper" role that `text-xs` (12px) is too small for
 
 **RTL text rules:**
 - Headings: `text-start` alignment (RTL-aware)
@@ -137,6 +141,8 @@ Standard Tailwind v4 default scale (matches existing Phase 1 usage):
 | **Destructive — Delete product** | "Delete Product": "Are you sure you want to delete '{name}'? This cannot be undone." |
 | **Destructive — Remove from cart** | "Remove Item": "Remove '{name}' from your cart?" |
 | **Destructive — Delete category** | "Delete Category": "Are you sure? Products in this category will need to be reassigned." |
+| **Admin product form — secondary action** | "Back to Products" — navigates to `/Admin/Products` without saving |
+| **Admin category form — secondary action** | "Back to Categories" — navigates to `/Admin/Categories` without saving |
 | **Success — Added to cart** | "Added to cart" (brief toast/notification, auto-dismiss after 3 seconds) |
 | **Success — Order placed** | "Order Confirmed!" / "Your order #{id} has been placed successfully." |
 | **Success — Status updated** | "Order status updated to {status}" (admin notification) |
@@ -197,7 +203,7 @@ The existing layout gets nav items added:
 ```
 
 - Sidebar: `w-64` (256px), `bg-gray-100`, `min-h-screen`, `p-4`
-- Sidebar nav items: `block px-4 py-2 rounded hover:bg-gray-200 text-sm font-medium`
+- Sidebar nav items: `block px-4 py-2 rounded hover:bg-gray-200 text-sm font-bold`
 - Active sidebar item: `bg-blue-600 text-white`
 - Content area: `flex-1 p-6`
 - Responsive: sidebar collapses to top nav on mobile (`hidden md:block`)
@@ -209,6 +215,8 @@ The existing layout gets nav items added:
 **Route:** `/Catalog` or `/Catalog?search=...&category=...&petType=...&brand=...&minPrice=...&maxPrice=...&sort=...&page=1`
 
 **Layout:** `_Layout.cshtml`
+
+**Focal Point:** The product image grid is the primary visual anchor — it occupies ~70% of the viewport width and contains the largest visual elements (product images). The filter sidebar is secondary (240px, neutral background, text-based controls). Visual hierarchy: product images first → prices/CTA second → filters third.
 
 **Structure:**
 
@@ -248,12 +256,12 @@ The existing layout gets nav items added:
 **Product Card (`bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden`):**
 - Image: `<img class="w-full h-48 object-cover">` or gray placeholder if no image
 - Content padding: `p-4`
-- Product name: `text-base font-semibold mb-1` (truncated to 2 lines: `line-clamp-2`)
+- Product name: `text-base font-bold mb-1` (truncated to 2 lines: `line-clamp-2`)
 - Category/Brand: `text-xs text-gray-500 mb-2`
-- Price: `text-lg font-bold text-gray-900` — show computed price (base × multiplier for cheapest variant)
-- Price range if variants differ: `text-lg font-bold text-gray-900` — show "{min} – {max}"
+- Price: `text-base font-bold text-gray-900` — show computed price (base × multiplier for cheapest variant)
+- Price range if variants differ: `text-base font-bold text-gray-900` — show "{min} – {max}"
 - Stock badge (if ≤ 5): `text-xs text-yellow-600` — "Only {N} left"
-- Out of stock badge: `text-xs text-red-600 font-semibold` — "Out of Stock"
+- Out of stock badge: `text-xs text-red-600 font-bold` — "Out of Stock"
 - Entire card is a link to `/Catalog/Details/{id}`
 
 **Responsive:**
@@ -336,7 +344,7 @@ The existing layout gets nav items added:
 - jQuery-based increment/decrement with AJAX stock check
 
 **Add to Cart button:**
-- Full width: `w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors`
+- Full width: `w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors`
 - Disabled state: `bg-gray-300 cursor-not-allowed` (out of stock)
 - Loading state: "Adding..." with spinner
 - Success: Brief toast "Added to cart!" (auto-dismiss 3s)
@@ -379,7 +387,7 @@ The existing layout gets nav items added:
 **Cart Item Row:**
 - Layout: `flex items-center gap-4 p-4 border-b border-gray-200`
 - Image: `w-16 h-16 object-cover rounded` (or gray placeholder)
-- Name: `font-semibold text-base`
+- Name: `font-bold text-base`
 - Variant details: `text-sm text-gray-500` — "Size: M, Color: Blue"
 - Locked price: `text-sm text-gray-600` with tooltip: "Price at time of adding to cart"
 - Quantity selector: Same as product detail (with stock validation)
@@ -391,12 +399,12 @@ The existing layout gets nav items added:
 - Shipping: Flat rate (agent's discretion — suggest $5.99 or free above threshold)
 - Tax: placeholder "Calculated at checkout" (or $0.00 for v1)
 - Divider: `border-t border-gray-200 my-4`
-- Total: `text-xl font-bold`
+- Total: `text-2xl font-bold`
 - Checkout button: Same primary CTA style
 
 **Empty cart state:**
 - `bg-white rounded-lg shadow p-12 text-center`
-- Icon: Cart emoji or SVG
+- Icon: Cart SVG
 - Heading: "Your cart is empty"
 - Body: "Looks like you haven't added any products yet."
 - Link: "Browse Products" button (blue-600)
@@ -438,7 +446,7 @@ The existing layout gets nav items added:
 │   │                                │     │                   │
 │   │ [ Pay $49.99 ] (blue-600)     │     │                   │
 │   │                                │     │                   │
-│   │ ⚠ Error message area          │     │                   │
+│   │ [!] Error message area         │     │                   │
 │   └────────────────────────────────┘     │                   │
 │                                          │                   │
 └──────────────────────────────────────────┴───────────────────┘
@@ -451,7 +459,7 @@ The existing layout gets nav items added:
 - The Payment Element handles: card number, expiry, CVC, postal code — all within the embedded iframe
 
 **Pay button:**
-- Full width: `w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700`
+- Full width: `w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700`
 - Shows dynamic amount: "Pay $49.99"
 - Disabled while processing: "Processing..." with spinner
 - Disabled on error until form is corrected
@@ -482,7 +490,7 @@ The existing layout gets nav items added:
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                                                              │
-│              ✓ Order Confirmed!                              │
+│              [checkmark] Order Confirmed!                              │
 │              (text-2xl font-bold text-green-600)             │
 │                                                              │
 │              Thank you for your order.                       │
@@ -538,10 +546,10 @@ The existing layout gets nav items added:
 
 **Order Row:**
 - `flex items-center justify-between p-4 border-b border-gray-200 hover:bg-gray-50`
-- Order number: `font-semibold`
+- Order number: `font-bold`
 - Date: `text-sm text-gray-500`
 - Status badge: colored badge per status table above
-- Total: `font-semibold`
+- Total: `font-bold`
 - Responsive: On mobile, stack vertically (number + date on first line, status + total on second)
 
 **Empty state:** As defined in copywriting contract.
@@ -614,8 +622,8 @@ The existing layout gets nav items added:
 │ ┌──────────────────────────────────────────────────────────┐ │
 │ │ Name      │ Category  │ Brand   │ Price  │ Stock │ Actions│ │
 │ ├───────────┼───────────┼─────────┼────────┼───────┼───────┤ │
-│ │ Product A │ Dogs      │ BrandX  │ $29.99 │ 45    │ ✏ 🗑  │ │
-│ │ Product B │ Cats      │ BrandY  │ $19.99 │ 0     │ ✏ 🗑  │ │
+│ │ Product A │ Dogs      │ BrandX  │ $29.99 │ 45    │ <svg> <svg> │ │
+│ │ Product B │ Cats      │ BrandY  │ $19.99 │ 0     │ <svg> <svg> │ │
 │ │ ...       │ ...       │ ...     │ ...    │ ...   │ ...   │ │
 │ └──────────────────────────────────────────────────────────┘ │
 │                                                              │
@@ -626,10 +634,11 @@ The existing layout gets nav items added:
 
 **Table:**
 - `w-full bg-white rounded-lg shadow overflow-hidden`
-- Header: `bg-gray-50 text-sm font-semibold text-gray-600`
+- Header: `bg-gray-50 text-sm font-bold text-gray-600`
 - Rows: `border-b border-gray-100 hover:bg-gray-50`
 - Stock cell: colored — `text-red-600` if 0, `text-yellow-600` if ≤ 5, `text-gray-900` otherwise
 - Actions: Edit (pencil icon) + Delete (trash icon, red)
+- **Action icon buttons:** Use inline SVGs with `aria-label` attributes. Pencil icon: `<svg class="w-4 h-4" aria-hidden="true"><use href="#icon-pencil"/></svg>` with `aria-label="Edit {name}"`. Trash icon: `<svg class="w-4 h-4 text-red-600" aria-hidden="true"><use href="#icon-trash"/></svg>` with `aria-label="Delete {name}"`. Icon SVG sprite defined in `_AdminLayout.cshtml` `<defs>` block.
 - Product name links to edit page
 - Pagination at bottom
 
@@ -679,7 +688,7 @@ The existing layout gets nav items added:
 │   │ (repeats for each variant)                         │     │
 │   └────────────────────────────────────────────────────┘     │
 │                                                              │
-│   [ Save Product ]  [ Cancel ]                               │
+│   [ Save Product ]  [ Back to Products ]                               │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -687,7 +696,7 @@ The existing layout gets nav items added:
 **Variant section:**
 - Dynamic form rows added via jQuery (add/remove variant buttons)
 - Each variant row: `bg-gray-50 rounded p-4 mb-3`
-- "Add Variant" button: `text-blue-600 hover:text-blue-800 text-sm font-semibold`
+- "Add Variant" button: `text-blue-600 hover:text-blue-800 text-sm font-bold`
 - "Remove" button: `text-red-600 hover:text-red-800 text-sm`
 - Minimum 0 variants allowed (product without variants shows base price only)
 
@@ -721,11 +730,11 @@ The existing layout gets nav items added:
 │   ┌────────────────────────────────────────────────────┐     │
 │   │ Name              │ Parent         │ Products │ Actions│ │
 │   ├───────────────────┼────────────────┼──────────┼───────┤ │
-│   │ Dogs              │ —              │ 23       │ ✏ 🗑  │ │
-│   │   Dry Food        │ Dogs           │ 8        │ ✏ 🗑  │ │
-│   │   Wet Food        │ Dogs           │ 5        │ ✏ 🗑  │ │
-│   │ Cats              │ —              │ 18       │ ✏ 🗑  │ │
-│   │ Toys              │ —              │ 12       │ ✏ 🗑  │ │
+│   │ Dogs              │ —              │ 23       │ <svg> <svg> │ │
+│   │   Dry Food        │ Dogs           │ 8        │ <svg> <svg> │ │
+│   │   Wet Food        │ Dogs           │ 5        │ <svg> <svg> │ │
+│   │ Cats              │ —              │ 18       │ <svg> <svg> │ │
+│   │ Toys              │ —              │ 12       │ <svg> <svg> │ │
 │   └────────────────────────────────────────────────────┘     │
 │                                                              │
 └──────────────────────────────────────────────────────────────┘
@@ -763,7 +772,7 @@ The existing layout gets nav items added:
 │   │ Product    │ Variant    │ SKU    │ Stock │ Status      │ │
 │   ├────────────┼────────────┼────────┼───────┼─────────────┤ │
 │   │ Dog Food   │ Large/Blue │ SKU-01 │ 45    │ In Stock    │ │
-│   │ Dog Food   │ Small/Red  │ SKU-02 │ 3     │ Low Stock ⚠│ │
+│   │ Dog Food   │ Small/Red  │ SKU-02 │ 3     │ Low Stock [!]  │ │
 │   │ Cat Toy    │ —          │ SKU-03 │ 0     │ Out of Stock│ │
 │   └────────────────────────────────────────────────────────┘ │
 │                                                              │
@@ -944,7 +953,7 @@ The existing layout gets nav items added:
 
 **Empty state component:**
 - `bg-white rounded-lg shadow p-12 text-center`
-- Heading: `text-xl font-semibold text-gray-700 mb-2`
+- Heading: `text-2xl font-bold text-gray-700 mb-2`
 - Body: `text-gray-500 mb-6`
 - CTA: `inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700`
 
@@ -989,8 +998,8 @@ Applicable state considerations resolved: 14 covered, 2 backstop, 0 unresolved
 | error | Add to cart (stock/existence) | ✅ covered | Inline error messages with specific copy per failure type |
 | error | Checkout payment | ✅ covered | Error display area below Stripe Payment Element with retry guidance |
 | error | Page load failure | ✅ covered | Full-page error card with retry button |
-| populated | Product grid (typical) | 🧪 backstop | 3-column grid with cards, images, prices — visual verification needed |
-| populated | Order timeline | 🧪 backstop | Vertical timeline with 4 status dots — visual verification needed |
+| populated | Product grid (typical) | backstop | 3-column grid with cards, images, prices — visual verification needed |
+| populated | Order timeline | backstop | Vertical timeline with 4 status dots — visual verification needed |
 | overflow | Product name (long) | ✅ covered | `line-clamp-2` truncation with ellipsis on product cards |
 | overflow | Product description (long) | ✅ covered | `line-clamp-3` on detail page, full text on separate expandable section |
 | long-text | Category name (admin table) | ✅ covered | Truncated with ellipsis at 200px width, full name on hover tooltip |
