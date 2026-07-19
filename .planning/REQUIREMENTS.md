@@ -29,14 +29,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### E-Commerce
 
-- [ ] **ECOM-01**: User can browse product catalog with search/filter
-- [ ] **ECOM-02**: User can filter products by pet type, category, price, brand
-- [ ] **ECOM-03**: User can add products to shopping cart
-- [ ] **ECOM-04**: User can checkout with payment
-- [ ] **ECOM-05**: User can view order history and status
-- [ ] **ECOM-06**: Admin can manage products (CRUD)
-- [ ] **ECOM-07**: Admin can manage categories
-- [ ] **ECOM-08**: Admin can manage inventory
+- [x] **ECOM-01**: User can browse product catalog with search/filter
+- [x] **ECOM-02**: User can filter products by pet type, category, price, brand
+- [x] **ECOM-03**: User can add products to shopping cart
+- [x] **ECOM-04**: User can checkout with payment
+- [x] **ECOM-05**: User can view order history and status
+- [x] **ECOM-06**: Admin can manage products (CRUD)
+- [x] **ECOM-07**: Admin can manage categories
+- [x] **ECOM-08**: Admin can manage inventory
 
 ### Adoption
 
@@ -130,14 +130,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PET-04 | Phase 1 | Pending |
 | PET-05 | Phase 1 | Pending |
 | PET-06 | Phase 1 | Pending |
-| ECOM-01 | Phase 2 | Pending |
-| ECOM-02 | Phase 2 | Pending |
-| ECOM-03 | Phase 2 | Pending |
-| ECOM-04 | Phase 2 | Pending |
-| ECOM-05 | Phase 2 | Pending |
-| ECOM-06 | Phase 2 | Pending |
-| ECOM-07 | Phase 2 | Pending |
-| ECOM-08 | Phase 2 | Pending |
+| ECOM-01 | Phase 2 | Complete |
+| ECOM-02 | Phase 2 | Complete |
+| ECOM-03 | Phase 2 | Complete |
+| ECOM-04 | Phase 2 | Complete |
+| ECOM-05 | Phase 2 | Complete |
+| ECOM-06 | Phase 2 | Complete |
+| ECOM-07 | Phase 2 | Complete |
+| ECOM-08 | Phase 2 | Complete |
 | ADPT-01 | Phase 3 | Pending |
 | ADPT-02 | Phase 3 | Pending |
 | ADPT-03 | Phase 3 | Pending |
@@ -157,6 +157,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADMN-05 | Phase 1 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 38 total
 - Mapped to phases: 38
 - Unmapped: 0 ✓
