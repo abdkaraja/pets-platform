@@ -46,7 +46,11 @@ Plans:
   2. User can add products to a shopping cart, checkout with payment, and receive order confirmation
   3. User can view order history and track order status
   4. Admin can manage products (CRUD), categories, and inventory levels
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 02-01-PLAN.md — Domain entities, database schema & application services foundation
+- [ ] 02-02-PLAN.md — Admin management UI (products, categories, inventory, orders)
+- [ ] 02-03-PLAN.md — Customer-facing catalog, cart, Stripe checkout & order tracking
 **UI hint**: yes
 
 ### Phase 3: Adoption Module
@@ -91,7 +95,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation, Identity & Core Profiles | 3/3 | Complete | 2026-07-18 |
-| 2. E-Commerce Module | 0/0 | Not started | - |
+| 2. E-Commerce Module | 0/3 | Not started | - |
 | 3. Adoption Module | 0/0 | Not started | - |
 | 4. Lost Pets Module | 0/0 | Not started | - |
 | 5. Medical Records & Admin Expansion | 0/0 | Not started | - |
