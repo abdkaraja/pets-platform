@@ -7,6 +7,7 @@ using PetPlatform.Application.Validators;
 using PetPlatform.Infrastructure.Identity;
 using PetPlatform.Infrastructure.Persistence;
 using PetPlatform.Infrastructure.Services;
+using Stripe;
 using StripeClient = Stripe.StripeClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -104,5 +105,30 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.MapRazorPages();
+
+// ── Stripe Webhook (must NOT require auth — Stripe calls it externally) ──
+app.MapPost("/webhook", async (HttpContext context, IPaymentService paymentService, IConfiguration config) =>
+{
+    var json = await new StreamReader(context.Request.Body).ReadToEndAsync();
+    try
+    {
+        var stripeEvent = EventUtility.ConstructEvent(
+            json,
+            context.Request.Headers["Stripe-Signature"].FirstOrDefault(),
+            config["Stripe:WebhookSecret"]);
+
+        if (stripeEvent.Type == "checkout.session.completed")
+        {
+            var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
+            if (session != null)
+                await paymentService.HandleCheckoutSessionCompletedAsync(session.Id);
+        }
+        return Results.Ok();
+    }
+    catch (StripeException)
+    {
+        return Results.BadRequest();
+    }
+}).AllowAnonymous();
 
 app.Run();

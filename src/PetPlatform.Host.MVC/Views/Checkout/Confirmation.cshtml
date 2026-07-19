@@ -1,0 +1,86 @@
+@model PetPlatform.Application.DTOs.OrderDto?
+@{
+    ViewData["Title"] = "Order Confirmation";
+    var waiting = ViewData["WaitingForConfirmation"] as bool? == true;
+    var sessionId = ViewData["SessionId"] as string;
+}
+
+<div class="max-w-2xl mx-auto text-center py-12">
+    @if (waiting)
+    {
+        @* Waiting for webhook to process *@
+        <div class="mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-4">
+                <svg class="w-8 h-8 text-yellow-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold mb-2">Your order is being confirmed</h1>
+            <p class="text-gray-600">You'll receive an email shortly.</p>
+        </div>
+        <meta http-equiv="refresh" content="3" />
+    }
+    else if (Model != null)
+    {
+        @* Order confirmed *@
+        <div class="mb-6">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-green-600 mb-2">Order Confirmed!</h1>
+            <p class="text-gray-600">Thank you for your order. Order #@Model.Id</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 text-start mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold">Order Details</h2>
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-bold
+                    @(Model.Status == PetPlatform.Domain.Enums.OrderStatus.Pending ? "bg-yellow-100 text-yellow-800" :
+                      Model.Status == PetPlatform.Domain.Enums.OrderStatus.Processing ? "bg-blue-100 text-blue-800" :
+                      Model.Status == PetPlatform.Domain.Enums.OrderStatus.Shipped ? "bg-purple-100 text-purple-800" :
+                      "bg-green-100 text-green-800")">
+                    @Model.StatusText
+                </span>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Placed on @Model.CreatedAt.ToString("MMMM dd, yyyy")</p>
+
+            <div class="space-y-2 mb-4">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">@item.ProductName x @item.Quantity</span>
+                        <span dir="ltr">$@item.LineTotal.ToString("F2")</span>
+                    </div>
+                }
+            </div>
+
+            <hr class="border-gray-200 my-4" />
+
+            <div class="flex justify-between font-bold text-lg">
+                <span>Total</span>
+                <span dir="ltr">$@Model.TotalAmount.ToString("F2")</span>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ShippingAddress))
+            {
+                <div class="mt-4 text-sm text-gray-600">
+                    <span class="font-bold">Shipping to:</span> @Model.ShippingAddress
+                </div>
+            }
+        </div>
+
+        <div class="flex justify-center gap-4">
+            <a asp-controller="Order" asp-action="Details" asp-route-id="@Model.Id"
+               class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                View Order Details
+            </a>
+            <a asp-controller="Catalog" asp-action="Index"
+               class="inline-block border border-gray-300 px-6 py-3 rounded-lg font-bold hover:bg-gray-50 transition-colors">
+                Continue Shopping
+            </a>
+        </div>
+    }
+</div>
