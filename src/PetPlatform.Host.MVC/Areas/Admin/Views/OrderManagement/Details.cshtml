@@ -1,0 +1,169 @@
+@model PetPlatform.Application.DTOs.AdminOrderDto
+
+@{
+    ViewData["Title"] = $"Order #{Model.Id}";
+    var items = ViewBag.OrderItems as IEnumerable<PetPlatform.Application.DTOs.OrderItemDto> ?? Enumerable.Empty<PetPlatform.Application.DTOs.OrderItemDto>();
+    var statusHistory = ViewBag.StatusHistory as IEnumerable<PetPlatform.Application.DTOs.OrderStatusHistoryDto> ?? Enumerable.Empty<PetPlatform.Application.DTOs.OrderStatusHistoryDto>();
+    var shippingAddress = ViewBag.ShippingAddress as string;
+}
+
+<div class="space-y-6">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-gray-500">
+        <a asp-action="Index" class="hover:text-gray-700">Orders</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900">Order #@Model.Id</span>
+    </nav>
+
+    <!-- Order Header -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-900">Order #@Model.Id</h2>
+            @switch (Model.Status)
+            {
+                case PetPlatform.Domain.Enums.OrderStatus.Pending:
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                    break;
+                case PetPlatform.Domain.Enums.OrderStatus.Processing:
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">Processing</span>
+                    break;
+                case PetPlatform.Domain.Enums.OrderStatus.Shipped:
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">Shipped</span>
+                    break;
+                case PetPlatform.Domain.Enums.OrderStatus.Delivered:
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Delivered</span>
+                    break;
+            }
+        </div>
+        <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+            <span>Customer: <strong>@Model.CustomerEmail</strong></span>
+            <span>Date: <strong>@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</strong></span>
+        </div>
+    </div>
+
+    <!-- Update Status -->
+    @if (Model.NextStatus.HasValue)
+    {
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-base font-bold text-gray-700 mb-4">Update Status</h3>
+            <form asp-action="UpdateStatus" asp-route-id="@Model.Id" method="post" class="flex items-center gap-4"
+                  id="statusForm">
+                @Html.AntiForgeryToken()
+                <select name="newStatus" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <option value="@Model.NextStatus.Value">@Model.NextStatus.Value</option>
+                </select>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold">
+                    Update Status
+                </button>
+            </form>
+        </div>
+    }
+
+    <!-- Items -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-base font-bold text-gray-700 mb-4">Items</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-start">
+                <thead class="bg-gray-50 text-sm font-bold text-gray-600">
+                    <tr>
+                        <th class="px-4 py-3 text-start">Product</th>
+                        <th class="px-4 py-3 text-start">Variant</th>
+                        <th class="px-4 py-3 text-start">Quantity</th>
+                        <th class="px-4 py-3 text-start">Unit Price</th>
+                        <th class="px-4 py-3 text-start">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @foreach (var item in items)
+                    {
+                        <tr>
+                            <td class="px-4 py-3 font-medium text-gray-900">@item.ProductName</td>
+                            <td class="px-4 py-3 text-gray-600">@(item.VariantDescription ?? "—")</td>
+                            <td class="px-4 py-3 text-gray-600">@item.Quantity</td>
+                            <td class="px-4 py-3 text-gray-900" dir="ltr">@item.UnitPrice.ToString("C")</td>
+                            <td class="px-4 py-3 font-bold text-gray-900" dir="ltr">@item.LineTotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="border-t border-gray-200 mt-4 pt-4 text-end">
+            <span class="text-2xl font-bold text-gray-900" dir="ltr">@Model.TotalAmount.ToString("C")</span>
+        </div>
+    </div>
+
+    <!-- Status Timeline -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-base font-bold text-gray-700 mb-4">Status Timeline</h3>
+        <div class="space-y-0">
+            @{
+                var allStatuses = new[] {
+                    PetPlatform.Domain.Enums.OrderStatus.Pending,
+                    PetPlatform.Domain.Enums.OrderStatus.Processing,
+                    PetPlatform.Domain.Enums.OrderStatus.Shipped,
+                    PetPlatform.Domain.Enums.OrderStatus.Delivered
+                };
+                var historyLookup = statusHistory.ToDictionary(h => h.Status, h => h);
+                var currentStatusOrder = (int)Model.Status;
+            }
+            @foreach (var status in allStatuses)
+            {
+                var statusOrder = (int)status;
+                var isCompleted = statusOrder <= currentStatusOrder;
+                var isCurrent = statusOrder == currentStatusOrder;
+                var historyEntry = historyLookup.TryGetValue(status, out var h) ? h : null;
+
+                <div class="flex items-start gap-4 relative">
+                    <!-- Timeline line -->
+                    @if (status != PetPlatform.Domain.Enums.OrderStatus.Delivered)
+                    {
+                        <div class="absolute top-4 @(isCompleted ? "border-s-2 border-blue-600" : "border-s-2 border-gray-200") h-full @(isCompleted ? "ms-[7px]" : "ms-[7px]")"></div>
+                    }
+                    <!-- Dot -->
+                    <div class="relative flex-shrink-0">
+                        <div class="w-4 h-4 rounded-full @(isCompleted ? "bg-blue-600" : "bg-gray-300")"></div>
+                    </div>
+                    <!-- Content -->
+                    <div class="pb-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold @(isCompleted ? "text-gray-900" : "text-gray-400")">
+                                @status.ToString()
+                            </span>
+                            @if (isCurrent)
+                            {
+                                <span class="text-xs text-blue-600 font-medium">(current)</span>
+                            }
+                        </div>
+                        @if (historyEntry != null)
+                        {
+                            <span class="text-xs @(isCompleted ? "text-gray-600" : "text-gray-400")">
+                                @historyEntry.ChangedAt.ToString("MMM dd, yyyy HH:mm")
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Shipping -->
+    @if (!string.IsNullOrEmpty(shippingAddress))
+    {
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-base font-bold text-gray-700 mb-2">Shipping Address</h3>
+            <p class="text-gray-600 text-sm whitespace-pre-line">@shippingAddress</p>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $('#statusForm').on('submit', function (e) {
+            var status = $(this).find('select[name="newStatus"]').val();
+            if (!confirm('Mark order as ' + status + '?')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+}
