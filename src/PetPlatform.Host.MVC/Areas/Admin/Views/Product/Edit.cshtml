@@ -1,0 +1,199 @@
+@model PetPlatform.Application.DTOs.AdminProductDto
+
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800">Edit Product</h2>
+    </div>
+
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm mb-4"></div>
+
+        <!-- Basic Information -->
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h3 class="text-base font-bold text-gray-700 mb-4">Basic Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label asp-for="Name" class="block text-sm font-bold text-gray-700 mb-1">Name *</label>
+                    <input asp-for="Name" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                    <span asp-validation-for="Name" class="text-red-600 text-sm mt-1"></span>
+                </div>
+                <div>
+                    <label asp-for="BasePrice" class="block text-sm font-bold text-gray-700 mb-1">Base Price *</label>
+                    <input asp-for="BasePrice" type="number" step="0.01" min="0.01"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                    <span asp-validation-for="BasePrice" class="text-red-600 text-sm mt-1"></span>
+                </div>
+                <div class="md:col-span-2">
+                    <label asp-for="Description" class="block text-sm font-bold text-gray-700 mb-1">Description</label>
+                    <textarea asp-for="Description" rows="3"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                    <span asp-validation-for="Description" class="text-red-600 text-sm mt-1"></span>
+                </div>
+                <div>
+                    <label asp-for="CategoryId" class="block text-sm font-bold text-gray-700 mb-1">Category *</label>
+                    <select asp-for="CategoryId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select Category</option>
+                        @if (ViewBag.Categories is IEnumerable<PetPlatform.Application.DTOs.CategoryDto> categories)
+                        {
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-red-600 text-sm mt-1"></span>
+                </div>
+                <div>
+                    <label asp-for="BrandId" class="block text-sm font-bold text-gray-700 mb-1">Brand *</label>
+                    <select asp-for="BrandId" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select Brand</option>
+                        @if (ViewBag.Brands is IEnumerable<PetPlatform.Application.DTOs.BrandDto> brands)
+                        {
+                            @foreach (var brand in brands)
+                            {
+                                <option value="@brand.Id" selected="@(brand.Id == Model.BrandId)">@brand.Name</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="BrandId" class="text-red-600 text-sm mt-1"></span>
+                </div>
+                <div>
+                    <label asp-for="PetType" class="block text-sm font-bold text-gray-700 mb-1">Pet Type *</label>
+                    <select asp-for="PetType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        <option value="">Select Pet Type</option>
+                        <option value="Dog" selected="@(Model.PetType == "Dog")">Dog</option>
+                        <option value="Cat" selected="@(Model.PetType == "Cat")">Cat</option>
+                        <option value="Bird" selected="@(Model.PetType == "Bird")">Bird</option>
+                        <option value="Fish" selected="@(Model.PetType == "Fish")">Fish</option>
+                        <option value="Small Animal" selected="@(Model.PetType == "Small Animal")">Small Animal</option>
+                    </select>
+                    <span asp-validation-for="PetType" class="text-red-600 text-sm mt-1"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Image -->
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h3 class="text-base font-bold text-gray-700 mb-4">Product Image</h3>
+            @if (!string.IsNullOrEmpty(Model.ImagePath))
+            {
+                <div class="mb-4">
+                    <p class="text-sm text-gray-500 mb-2">Current image:</p>
+                    <img src="@Model.ImagePath" alt="Current product image" class="w-32 h-32 object-cover rounded" />
+                </div>
+            }
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400">
+                <input type="file" name="imageFile" id="imageFile" accept=".jpg,.jpeg,.png,.webp"
+                       class="hidden" />
+                <label for="imageFile" class="cursor-pointer">
+                    <svg class="w-8 h-8 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-sm text-gray-500">Click to upload or drag & drop</span>
+                    <br />
+                    <span class="text-xs text-gray-400">JPG, PNG, WebP (max 5MB)</span>
+                </label>
+            </div>
+            <div id="imagePreview" class="mt-4 hidden">
+                <img id="previewImg" class="w-32 h-32 object-cover rounded" alt="Preview" />
+            </div>
+        </div>
+
+        <!-- Variants -->
+        <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-gray-700">Variants</h3>
+                <button type="button" id="addVariant"
+                        class="text-blue-600 hover:text-blue-800 text-sm font-bold">
+                    + Add Variant
+                </button>
+            </div>
+            <div id="variantsContainer" class="space-y-3">
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-4">
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold">
+                Save Product
+            </button>
+            <a asp-action="Index" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                Back to Products
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        var variantIndex = 0;
+
+        $('#addVariant').on('click', function () {
+            var html = `
+                <div class="bg-white rounded p-4 mb-3 border border-gray-200 variant-row" data-index="${variantIndex}">
+                    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Size</label>
+                            <input name="Variants[${variantIndex}].Size" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Color</label>
+                            <input name="Variants[${variantIndex}].Color" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Weight</label>
+                            <input name="Variants[${variantIndex}].Weight" type="number" step="0.01"
+                                   class="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Price Multiplier</label>
+                            <input name="Variants[${variantIndex}].PriceMultiplier" type="number" step="0.1" value="1.0"
+                                   class="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Stock</label>
+                            <input name="Variants[${variantIndex}].StockQuantity" type="number" value="0"
+                                   class="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">SKU</label>
+                            <input name="Variants[${variantIndex}].Sku" class="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <button type="button" class="remove-variant text-red-600 hover:text-red-800 text-sm">Remove</button>
+                    </div>
+                </div>`;
+            $('#variantsContainer').append(html);
+            variantIndex++;
+        });
+
+        $(document).on('click', '.remove-variant', function () {
+            $(this).closest('.variant-row').remove();
+        });
+
+        $('#imageFile').on('change', function () {
+            var file = this.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB.');
+                    this.value = '';
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#previewImg').attr('src', e.target.result);
+                    $('#imagePreview').removeClass('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+}

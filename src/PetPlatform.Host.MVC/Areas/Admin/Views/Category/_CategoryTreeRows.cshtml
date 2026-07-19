@@ -1,0 +1,45 @@
+@model IEnumerable<PetPlatform.Application.DTOs.CategoryDto>
+
+@{
+    var level = (int)(ViewData["Level"] ?? 0);
+}
+
+@foreach (var category in Model)
+{
+    <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 font-medium text-gray-900" style="padding-start: @(12 + level * 24)px">
+            <a asp-action="Edit" asp-route-id="@category.Id" class="text-blue-600 hover:underline">
+                @category.Name
+            </a>
+        </td>
+        <td class="px-6 py-4 text-gray-600">@(category.ParentName ?? "—")</td>
+        <td class="px-6 py-4 text-gray-600">@category.ProductCount</td>
+        <td class="px-6 py-4">
+            <div class="flex items-center gap-2">
+                <a asp-action="Edit" asp-route-id="@category.Id"
+                   class="text-blue-600 hover:text-blue-800" aria-label="Edit @category.Name">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </a>
+                <form asp-action="Delete" asp-route-id="@category.Id" method="post" class="inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="text-red-600 hover:text-red-800"
+                            onclick="return confirm('Are you sure? Products in this category will need to be reassigned.')"
+                            aria-label="Delete @category.Name">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </td>
+    </tr>
+    @if (category.Children.Any())
+    {
+        @await Html.PartialAsync("_CategoryTreeRows", category.Children, new ViewDataDictionary(ViewData) { ["Level"] = level + 1 })
+    }
+}
