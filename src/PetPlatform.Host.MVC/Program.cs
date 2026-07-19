@@ -7,6 +7,7 @@ using PetPlatform.Application.Validators;
 using PetPlatform.Infrastructure.Identity;
 using PetPlatform.Infrastructure.Persistence;
 using PetPlatform.Infrastructure.Services;
+using StripeClient = Stripe.StripeClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,17 +40,31 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Permission:Users.Manage", policy => policy.RequireClaim("Permission", "Users.Manage"))
     .AddPolicy("Permission:Roles.Create", policy => policy.RequireClaim("Permission", "Roles.Create"))
     .AddPolicy("Permission:Roles.Assign", policy => policy.RequireClaim("Permission", "Roles.Assign"))
-    .AddPolicy("Permission:Pets.Manage", policy => policy.RequireClaim("Permission", "Pets.Manage"));
+    .AddPolicy("Permission:Pets.Manage", policy => policy.RequireClaim("Permission", "Pets.Manage"))
+    .AddPolicy("Permission:Products.Manage", policy => policy.RequireClaim("Permission", "Products.Manage"))
+    .AddPolicy("Permission:Categories.Manage", policy => policy.RequireClaim("Permission", "Categories.Manage"))
+    .AddPolicy("Permission:Inventory.Manage", policy => policy.RequireClaim("Permission", "Inventory.Manage"))
+    .AddPolicy("Permission:Orders.Manage", policy => policy.RequireClaim("Permission", "Orders.Manage"));
 
 // ── Email sender (console-log stub for Phase 1) ────────────────────────
 builder.Services.AddScoped(typeof(IEmailSender<>), typeof(EmailSender<>));
 
 // ── Application services ─────────────────────────────────────────────
 builder.Services.AddScoped<IPetService, PetService>();
-builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ICustomerService, PetPlatform.Application.Services.CustomerService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IProductService, PetPlatform.Application.Services.ProductService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IApplicationDbContext>(sp =>
     sp.GetRequiredService<ApplicationDbContext>());
+
+// ── Stripe ──────────────────────────────────────────────────────────
+builder.Services.AddSingleton(new StripeClient(
+    builder.Configuration["Stripe:SecretKey"]));
 
 // ── FluentValidation ─────────────────────────────────────────────────
 builder.Services.AddValidatorsFromAssemblyContaining<CreatePetValidator>();

@@ -29,4 +29,9 @@ public class Cart
         Items.Clear();
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void Touch()
+    {
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
