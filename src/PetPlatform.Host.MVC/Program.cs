@@ -45,7 +45,8 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Permission:Products.Manage", policy => policy.RequireClaim("Permission", "Products.Manage"))
     .AddPolicy("Permission:Categories.Manage", policy => policy.RequireClaim("Permission", "Categories.Manage"))
     .AddPolicy("Permission:Inventory.Manage", policy => policy.RequireClaim("Permission", "Inventory.Manage"))
-    .AddPolicy("Permission:Orders.Manage", policy => policy.RequireClaim("Permission", "Orders.Manage"));
+    .AddPolicy("Permission:Orders.Manage", policy => policy.RequireClaim("Permission", "Orders.Manage"))
+    .AddPolicy("Permission:Adoptions.Manage", policy => policy.RequireClaim("Permission", "Adoptions.Manage"));
 
 // ── Email sender (console-log stub for Phase 1) ────────────────────────
 builder.Services.AddScoped(typeof(IEmailSender<>), typeof(EmailSender<>));
@@ -58,8 +59,10 @@ builder.Services.AddScoped<IProductService, PetPlatform.Application.Services.Pro
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IAdoptionService, AdoptionService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<ILostPetService, LostPetService>();
 builder.Services.AddScoped<IApplicationDbContext>(sp =>
     sp.GetRequiredService<ApplicationDbContext>());
 
