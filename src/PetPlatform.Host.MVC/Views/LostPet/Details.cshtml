@@ -1,0 +1,104 @@
+@model PetPlatform.Application.DTOs.LostPetReportDto
+@using PetPlatform.Domain.Enums
+@{
+    ViewData["Title"] = $"{Model.ReportType} Pet Report";
+    var isReporter = User.Identity?.IsAuthenticated == true && 
+        Model.ReporterUserId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+}
+
+<div class="max-w-4xl mx-auto">
+    <a asp-action="Index" class="text-blue-600 hover:text-blue-800 text-sm font-bold mb-4 inline-block">&larr; Back to Search</a>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        @* Header *@
+        <div class="flex items-center gap-3 mb-6">
+            <span class="inline-block px-3 py-1 text-sm font-bold rounded @(Model.ReportType == LostPetReportType.Lost ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800")">
+                @Model.ReportType
+            </span>
+            <span class="inline-block px-3 py-1 text-sm font-bold rounded @(Model.Status == LostPetReportStatus.Open ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800")">
+                @Model.Status
+            </span>
+            <span class="text-sm text-gray-500">Reported @Model.DateReported.ToString("MMMM dd, yyyy")</span>
+        </div>
+
+        @* Photo Gallery *@
+        @if (Model.Photos.Any())
+        {
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                @foreach (var photo in Model.Photos)
+                {
+                    <img src="@photo.PhotoPath" alt="Pet photo" class="w-full h-32 object-cover rounded-lg" />
+                }
+            </div>
+        }
+        else
+        {
+            <div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-6">
+                <span class="text-gray-400">No Photos Available</span>
+            </div>
+        }
+
+        @* Report Info *@
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+                <h3 class="text-sm font-bold text-gray-500">Species</h3>
+                <p class="text-lg font-bold">@Model.Species</p>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Breed))
+            {
+                <div>
+                    <h3 class="text-sm font-bold text-gray-500">Breed</h3>
+                    <p class="text-lg font-bold">@Model.Breed</p>
+                </div>
+            }
+            <div>
+                <h3 class="text-sm font-bold text-gray-500">Color</h3>
+                <p class="text-lg font-bold">@Model.Color</p>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-gray-500">Location</h3>
+                <p class="text-lg font-bold">@Model.Location</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h3 class="text-sm font-bold text-gray-500 mb-2">Description</h3>
+            <p class="text-gray-700 whitespace-pre-wrap">@Model.Description</p>
+        </div>
+
+        @* Linked Pet *@
+        @if (Model.PetId.HasValue)
+        {
+            <div class="border-t pt-4 mb-6">
+                <h3 class="text-sm font-bold text-gray-500 mb-2">Linked Pet</h3>
+                <a asp-controller="Pet" asp-action="Details" asp-route-id="@Model.PetId" class="text-blue-600 hover:text-blue-800 font-bold">
+                    @Model.PetName
+                </a>
+            </div>
+        }
+
+        @* Reporter Info *@
+        <div class="border-t pt-4 mb-6">
+            <h3 class="text-sm font-bold text-gray-500">Reported by</h3>
+            <p class="text-gray-700">User #@Model.ReporterUserId.Substring(0, Math.Min(8, Model.ReporterUserId.Length))...</p>
+        </div>
+
+        @* Actions *@
+        @if (isReporter && Model.Status == LostPetReportStatus.Open)
+        {
+            <div class="border-t pt-4 flex gap-4">
+                <a asp-area="Customer" asp-controller="LostPet" asp-action="Edit" asp-route-id="@Model.Id"
+                   class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                    Edit Report
+                </a>
+                <form asp-area="Customer" asp-controller="LostPet" asp-action="Resolve" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 transition-colors"
+                            onclick="return confirm('Are you sure this pet has been found/recovered?')">
+                        Mark as Resolved
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,204 @@
+@model PetPlatform.Application.DTOs.PagedResultDto<PetPlatform.Application.DTOs.LostPetReportDto>
+@using PetPlatform.Domain.Enums
+@{
+    ViewData["Title"] = "Lost & Found Pets";
+    var currentReportType = (LostPetReportType?)ViewData["ReportType"];
+    var currentSpecies = (PetSpecies?)ViewData["Species"];
+    var currentBreed = (string?)ViewData["Breed"];
+    var currentColor = (string?)ViewData["Color"];
+    var currentLocation = (string?)ViewData["Location"];
+    var currentDateFrom = (string?)ViewData["DateFrom"];
+    var currentDateTo = (string?)ViewData["DateTo"];
+    var currentSearch = (string?)ViewData["Search"];
+}
+
+<h1 class="text-2xl font-bold mb-6">Lost & Found Pets</h1>
+
+<div class="flex flex-col lg:flex-row gap-6">
+    @* Filter Sidebar *@
+    <aside class="w-full lg:w-60 shrink-0">
+        <div class="bg-white rounded-lg shadow p-4 space-y-4">
+            <form method="get" asp-action="Index" id="filterForm">
+                @* Search *@
+                <div>
+                    <input type="search" name="search" value="@currentSearch" placeholder="Search reports..."
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+
+                @* Report Type *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Report Type</h3>
+                    <div class="space-y-1">
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="radio" name="reportType" value=""
+                                   @(!currentReportType.HasValue ? "checked" : "")
+                                   class="accent-blue-600" onchange="this.form.submit()" />
+                            All
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="radio" name="reportType" value="Lost"
+                                   @(currentReportType == LostPetReportType.Lost ? "checked" : "")
+                                   class="accent-red-600" onchange="this.form.submit()" />
+                            Lost
+                        </label>
+                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="radio" name="reportType" value="Found"
+                                   @(currentReportType == LostPetReportType.Found ? "checked" : "")
+                                   class="accent-green-600" onchange="this.form.submit()" />
+                            Found
+                        </label>
+                    </div>
+                </div>
+
+                @* Species *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Species</h3>
+                    <select name="species" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" onchange="this.form.submit()">
+                        <option value="">All Species</option>
+                        @foreach (var s in Enum.GetValues<PetSpecies>())
+                        {
+                            <option value="@s" @(currentSpecies == s ? "selected" : "")>@s</option>
+                        }
+                    </select>
+                </div>
+
+                @* Breed *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Breed</h3>
+                    <input type="text" name="breed" value="@currentBreed" placeholder="e.g., Labrador, Siamese..."
+                           class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                </div>
+
+                @* Color *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Color</h3>
+                    <input type="text" name="color" value="@currentColor" placeholder="e.g., Brown, White..."
+                           class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                </div>
+
+                @* Location *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Location</h3>
+                    <input type="text" name="location" value="@currentLocation" placeholder="e.g., Maadi, Downtown Cairo..."
+                           class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                </div>
+
+                @* Date Range *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Date Range</h3>
+                    <div class="flex gap-2">
+                        <input type="date" name="dateFrom" value="@currentDateFrom"
+                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                        <input type="date" name="dateTo" value="@currentDateTo"
+                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                    </div>
+                </div>
+
+                <input type="hidden" name="page" value="1" />
+
+                <div class="pt-2 flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-bold hover:bg-blue-700 transition-colors">
+                        Search
+                    </button>
+                    <a asp-action="Index" class="text-center text-sm text-blue-600 hover:text-blue-800 font-bold py-2">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </aside>
+
+    @* Report Grid *@
+    <div class="flex-1">
+        <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-gray-600">@(Model.TotalCount) reports found</span>
+        </div>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="bg-white rounded-lg shadow p-12 text-center">
+                <h2 class="text-2xl font-bold mb-2">No reports found</h2>
+                <p class="text-gray-600 mb-4">Try adjusting your filters, or report a lost/found pet.</p>
+                <a asp-action="Index" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                    Clear Filters
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var report in Model.Items)
+                {
+                    <a asp-action="Details" asp-route-id="@report.Id"
+                       class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                        @if (report.Photos.Any())
+                        {
+                            <img src="@report.Photos.First().PhotoPath" alt="Lost pet photo" class="w-full h-48 object-cover" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                <span class="text-gray-400 text-sm">No Photo</span>
+                            </div>
+                        }
+                        <div class="p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-block px-2 py-1 text-xs font-bold rounded @(report.ReportType == LostPetReportType.Lost ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800")">
+                                    @report.ReportType
+                                </span>
+                                <span class="text-xs text-gray-500">@report.DateReported.ToString("MMM dd, yyyy")</span>
+                            </div>
+                            <h3 class="text-base font-bold mb-1">@report.Species @(report.Breed != null ? $"- {report.Breed}" : "")</h3>
+                            <p class="text-sm text-gray-600 mb-1">@report.Color</p>
+                            <p class="text-sm text-gray-500 mb-2">@report.Location</p>
+                            <p class="text-xs text-gray-500 line-clamp-2">@report.Description</p>
+                        </div>
+                    </a>
+                }
+            </div>
+
+            @* Pagination *@
+            @if (Model.TotalPages > 1)
+            {
+                <div class="flex justify-center gap-2 mt-8">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a asp-action="Index" asp-route-reportType="@currentReportType" asp-route-species="@currentSpecies"
+                           asp-route-breed="@currentBreed" asp-route-color="@currentColor"
+                           asp-route-location="@currentLocation" asp-route-dateFrom="@currentDateFrom"
+                           asp-route-dateTo="@currentDateTo" asp-route-search="@currentSearch"
+                           asp-route-page="@(Model.Page - 1)"
+                           class="w-8 h-8 rounded border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50">
+                            &lsaquo;
+                        </a>
+                    }
+
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <a asp-action="Index" asp-route-reportType="@currentReportType" asp-route-species="@currentSpecies"
+                           asp-route-breed="@currentBreed" asp-route-color="@currentColor"
+                           asp-route-location="@currentLocation" asp-route-dateFrom="@currentDateFrom"
+                           asp-route-dateTo="@currentDateTo" asp-route-search="@currentSearch"
+                           asp-route-page="@i"
+                           class="w-8 h-8 rounded border text-sm flex items-center justify-center
+                                  @(i == Model.Page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-50")">
+                            @i
+                        </a>
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a asp-action="Index" asp-route-reportType="@currentReportType" asp-route-species="@currentSpecies"
+                           asp-route-breed="@currentBreed" asp-route-color="@currentColor"
+                           asp-route-location="@currentLocation" asp-route-dateFrom="@currentDateFrom"
+                           asp-route-dateTo="@currentDateTo" asp-route-search="@currentSearch"
+                           asp-route-page="@(Model.Page + 1)"
+                           class="w-8 h-8 rounded border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50">
+                            &rsaquo;
+                        </a>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
