@@ -132,4 +132,33 @@ public class LostPetController : Controller
 
         return RedirectToAction(nameof(ReportDetails), new { id });
     }
+
+    public async Task<IActionResult> Notifications()
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
+        var notifications = await _lostPetService.GetMyNotificationsAsync(userId);
+        return View(notifications);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarkNotificationRead(int notificationId)
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
+        var result = await _lostPetService.MarkNotificationReadAsync(notificationId, userId);
+        if (result.IsSuccess)
+        {
+            TempData["Success"] = "Notification marked as read.";
+        }
+        else
+        {
+            TempData["Error"] = result.Error ?? "Failed to mark notification as read.";
+        }
+
+        return RedirectToAction(nameof(Notifications));
+    }
 }
