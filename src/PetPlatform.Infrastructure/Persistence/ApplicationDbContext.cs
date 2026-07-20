@@ -26,6 +26,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
     public DbSet<Payment> Payments => Set<Payment>();
 
+    // Adoption entities
+    public DbSet<AdoptionListing> AdoptionListings => Set<AdoptionListing>();
+    public DbSet<AdoptionApplication> AdoptionApplications => Set<AdoptionApplication>();
+    public DbSet<ApplicationStatusHistory> ApplicationStatusHistory => Set<ApplicationStatusHistory>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST call first for Identity tables

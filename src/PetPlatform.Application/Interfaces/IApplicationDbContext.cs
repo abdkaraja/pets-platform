@@ -24,5 +24,10 @@ public interface IApplicationDbContext
     DbSet<OrderStatusHistory> OrderStatusHistory { get; }
     DbSet<Payment> Payments { get; }
 
+    // Adoption entities
+    DbSet<AdoptionListing> AdoptionListings { get; }
+    DbSet<AdoptionApplication> AdoptionApplications { get; }
+    DbSet<ApplicationStatusHistory> ApplicationStatusHistory { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
