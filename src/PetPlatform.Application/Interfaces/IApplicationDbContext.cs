@@ -29,5 +29,10 @@ public interface IApplicationDbContext
     DbSet<AdoptionApplication> AdoptionApplications { get; }
     DbSet<ApplicationStatusHistory> ApplicationStatusHistory { get; }
 
+    // Lost Pets entities
+    DbSet<LostPetReport> LostPetReports { get; }
+    DbSet<LostPetReportPhoto> LostPetReportPhotos { get; }
+    DbSet<MatchNotification> MatchNotifications { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

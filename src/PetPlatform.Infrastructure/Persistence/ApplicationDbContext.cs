@@ -31,6 +31,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<AdoptionApplication> AdoptionApplications => Set<AdoptionApplication>();
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistory => Set<ApplicationStatusHistory>();
 
+    // Lost Pets entities
+    public DbSet<LostPetReport> LostPetReports => Set<LostPetReport>();
+    public DbSet<LostPetReportPhoto> LostPetReportPhotos => Set<LostPetReportPhoto>();
+    public DbSet<MatchNotification> MatchNotifications => Set<MatchNotification>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST call first for Identity tables
