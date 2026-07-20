@@ -1,0 +1,102 @@
+@model PetPlatform.Application.DTOs.AdoptionListingDto
+@using PetPlatform.Domain.Enums
+@using System.Security.Claims
+@{
+    ViewData["Title"] = Model.Title;
+    var statusColor = Model.Status switch
+    {
+        ListingStatus.Active => "bg-green-100 text-green-800",
+        ListingStatus.Adopted => "bg-blue-100 text-blue-800",
+        ListingStatus.Closed => "bg-gray-100 text-gray-800",
+        ListingStatus.Pending => "bg-yellow-100 text-yellow-800",
+        _ => "bg-gray-100 text-gray-800"
+    };
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
+
+<div class="max-w-4xl mx-auto">
+    <a asp-action="Index" class="text-blue-600 hover:text-blue-800 text-sm mb-4 inline-block">&larr; Back to listings</a>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="md:flex">
+            @* Pet Photo *@
+            <div class="md:w-1/2">
+                @if (!string.IsNullOrEmpty(Model.PetPhotoPath))
+                {
+                    <img src="@Model.PetPhotoPath" alt="@Model.PetName" class="w-full h-64 md:h-full object-cover" />
+                }
+                else
+                {
+                    <div class="w-full h-64 md:h-full bg-gray-200 flex items-center justify-center">
+                        <span class="text-gray-400 text-lg">No Photo</span>
+                    </div>
+                }
+            </div>
+
+            @* Listing Info *@
+            <div class="md:w-1/2 p-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <h1 class="text-2xl font-bold">@Model.Title</h1>
+                    <span class="text-xs px-2 py-1 rounded-full @statusColor">@Model.Status</span>
+                </div>
+
+                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                    <p><span class="font-bold">Pet:</span> @Model.PetName</p>
+                    <p><span class="font-bold">Species:</span> @Model.PetSpecies</p>
+                    @if (!string.IsNullOrEmpty(Model.PetBreed))
+                    {
+                        <p><span class="font-bold">Breed:</span> @Model.PetBreed</p>
+                    }
+                    <p><span class="font-bold">Age:</span> @Model.PetAge years</p>
+                    <p><span class="font-bold">Location:</span> @Model.Location</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="mb-4">
+                        <h2 class="text-sm font-bold text-gray-700 mb-1">About this listing</h2>
+                        <p class="text-sm text-gray-600 whitespace-pre-line">@Model.Description</p>
+                    </div>
+                }
+
+                <div class="mb-4 text-xs text-gray-500">
+                    Posted: @Model.CreatedAt.ToString("MMM d, yyyy")
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <span> &middot; Updated: @Model.UpdatedAt.Value.ToString("MMM d, yyyy")</span>
+                    }
+                </div>
+
+                @* Action Buttons *@
+                @if (Model.Status == ListingStatus.Active)
+                {
+                    @if (isAuthenticated)
+                    {
+                        <a asp-area="Customer" asp-controller="Adoption" asp-action="Apply" asp-route-listingId="@Model.Id"
+                           class="block w-full text-center bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                            Apply for this Pet
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-area="Identity" asp-page="/Account/Login"
+                           class="block w-full text-center bg-gray-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-700 transition-colors">
+                            Sign in to Apply
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-gray-600">
+                        This listing is no longer accepting applications.
+                    </div>
+                }
+
+                @* Shelter Info *@
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-xs text-gray-500">Listed by shelter</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,175 @@
+@model PetPlatform.Application.DTOs.PagedResultDto<PetPlatform.Application.DTOs.AdoptionListingDto>
+@using PetPlatform.Domain.Enums
+@{
+    ViewData["Title"] = "Adopt a Pet";
+    var currentSpecies = (PetSpecies?)ViewData["Species"];
+    var currentBreed = (string?)ViewData["Breed"];
+    var currentMinAge = (int?)ViewData["MinAge"];
+    var currentMaxAge = (int?)ViewData["MaxAge"];
+    var currentLocation = (string?)ViewData["Location"];
+    var currentSearch = (string?)ViewData["Search"];
+}
+
+<h1 class="text-2xl font-bold mb-6">Adopt a Pet</h1>
+
+<div class="flex flex-col lg:flex-row gap-6">
+    @* Filter Sidebar *@
+    <aside class="w-full lg:w-60 shrink-0">
+        <div class="bg-white rounded-lg shadow p-4 space-y-4">
+            <form method="get" asp-action="Index" id="filterForm">
+                @* Search *@
+                <div>
+                    <input type="search" name="search" value="@currentSearch" placeholder="Search listings..."
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+
+                @* Species *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Species</h3>
+                    <select name="species" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                            onchange="this.form.submit()">
+                        <option value="">All Species</option>
+                        @foreach (PetSpecies s in Enum.GetValues<PetSpecies>())
+                        {
+                            <option value="@s" @(currentSpecies == s ? "selected" : "")>@s</option>
+                        }
+                    </select>
+                </div>
+
+                @* Breed *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Breed</h3>
+                    <input type="text" name="breed" value="@currentBreed" placeholder="Filter by breed..."
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+
+                @* Age Range *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Age Range</h3>
+                    <div class="flex gap-2">
+                        <input type="number" name="minAge" value="@currentMinAge" placeholder="Min"
+                               min="0"
+                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                        <input type="number" name="maxAge" value="@currentMaxAge" placeholder="Max"
+                               min="0"
+                               class="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                    </div>
+                </div>
+
+                @* Location *@
+                <div>
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Location</h3>
+                    <input type="text" name="location" value="@currentLocation" placeholder="Filter by location..."
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                </div>
+
+                <input type="hidden" name="page" value="1" />
+
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">
+                        Search
+                    </button>
+                    <a asp-action="Index" class="text-center text-sm text-blue-600 hover:text-blue-800 font-bold py-2">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </aside>
+
+    @* Listing Grid *@
+    <div class="flex-1">
+        <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-gray-600">@(Model.TotalCount) listings found</span>
+        </div>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="bg-white rounded-lg shadow p-12 text-center">
+                <h2 class="text-2xl font-bold mb-2">No adoptable pets found</h2>
+                <p class="text-gray-600 mb-4">Try adjusting your search or filters.</p>
+                <a asp-action="Index" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors">
+                    Clear Filters
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var listing in Model.Items)
+                {
+                    <a asp-action="Details" asp-route-id="@listing.Id"
+                       class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
+                        @if (!string.IsNullOrEmpty(listing.PetPhotoPath))
+                        {
+                            <img src="@listing.PetPhotoPath" alt="@listing.PetName" class="w-full h-48 object-cover" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                <span class="text-gray-400 text-sm">No Photo</span>
+                            </div>
+                        }
+                        <div class="p-4">
+                            <h3 class="text-base font-bold mb-1 line-clamp-2">@listing.Title</h3>
+                            <p class="text-xs text-gray-500 mb-1">@listing.PetName &mdash; @listing.PetSpecies</p>
+                            @if (!string.IsNullOrEmpty(listing.PetBreed))
+                            {
+                                <p class="text-xs text-gray-500 mb-2">@listing.PetBreed</p>
+                            }
+                            <div class="flex items-center justify-between text-xs text-gray-600">
+                                <span>Age: @listing.PetAge yrs</span>
+                                <span>@listing.Location</span>
+                            </div>
+                            <div class="mt-2">
+                                <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                    @listing.ApplicationCount application@(listing.ApplicationCount != 1 ? "s" : "")
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                }
+            </div>
+
+            @* Pagination *@
+            @if (Model.TotalPages > 1)
+            {
+                <div class="flex justify-center gap-2 mt-8">
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a asp-action="Index" asp-route-species="@currentSpecies" asp-route-breed="@currentBreed"
+                           asp-route-minAge="@currentMinAge" asp-route-maxAge="@currentMaxAge"
+                           asp-route-location="@currentLocation" asp-route-search="@currentSearch"
+                           asp-route-page="@(Model.Page - 1)"
+                           class="w-8 h-8 rounded border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50">
+                            &lsaquo;
+                        </a>
+                    }
+
+                    @for (var i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <a asp-action="Index" asp-route-species="@currentSpecies" asp-route-breed="@currentBreed"
+                           asp-route-minAge="@currentMinAge" asp-route-maxAge="@currentMaxAge"
+                           asp-route-location="@currentLocation" asp-route-search="@currentSearch"
+                           asp-route-page="@i"
+                           class="w-8 h-8 rounded border text-sm flex items-center justify-center
+                                  @(i == Model.Page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:bg-gray-50")">
+                            @i
+                        </a>
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a asp-action="Index" asp-route-species="@currentSpecies" asp-route-breed="@currentBreed"
+                           asp-route-minAge="@currentMinAge" asp-route-maxAge="@currentMaxAge"
+                           asp-route-location="@currentLocation" asp-route-search="@currentSearch"
+                           asp-route-page="@(Model.Page + 1)"
+                           class="w-8 h-8 rounded border border-gray-300 text-sm flex items-center justify-center hover:bg-gray-50">
+                            &rsaquo;
+                        </a>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
