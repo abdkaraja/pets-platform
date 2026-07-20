@@ -80,7 +80,7 @@ Plans:
 Plans:
 
 - [x] 03-01-PLAN.md — Domain entities, database schema & service layer foundation
-- [ ] 03-02-PLAN.md — Customer-facing adoption (browse, search, apply)
+- [x] 03-02-PLAN.md — Customer-facing adoption (browse, search, apply)
 - [ ] 03-03-PLAN.md — Shelter management (listings CRUD, application review)
 
 **UI hint**: yes
@@ -122,6 +122,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation, Identity & Core Profiles | 3/3 | Complete | 2026-07-18 |
 | 2. E-Commerce Module | 3/3 | Complete | 2026-07-18 |
-| 3. Adoption Module | 1/3 | In Progress | - |
+| 3. Adoption Module | 2/3 | In Progress | - |
 | 4. Lost Pets Module | 0/0 | Not started | - |
 | 5. Medical Records & Admin Expansion | 0/0 | Not started | - |
