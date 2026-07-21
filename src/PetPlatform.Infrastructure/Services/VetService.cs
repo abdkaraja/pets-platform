@@ -53,9 +53,17 @@ public class VetService : IVetService
         if (existingProfile is not null)
             return Result<VetProfileDto>.Failure("A vet profile already exists for this user.");
 
-        var profile = VetProfile.Create(dto.UserId, dto.FullName, dto.Clinic, dto.Specialty, dto.Bio, dto.ServicesOffered);
+        var profile = VetProfile.Create(userId, dto.FullName, dto.Clinic, dto.Specialty, dto.Bio, dto.ServicesOffered);
         _context.VetProfiles.Add(profile);
-        await _context.SaveChangesAsync();
+
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException)
+        {
+            return Result<VetProfileDto>.Failure("A vet profile already exists for this user.");
+        }
 
         return Result<VetProfileDto>.Success(MapToProfileDto(profile));
     }
@@ -109,12 +117,13 @@ public class VetService : IVetService
 
         var totalCount = await query.CountAsync();
 
-        var items = await query
+        var items = (await query
             .OrderByDescending(vp => vp.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
-            .Select(vp => MapToProfileDto(vp))
-            .ToListAsync();
+            .ToListAsync())
+            .Select(MapToProfileDto)
+            .ToList();
 
         return new PagedResultDto<VetProfileDto>
         {
@@ -261,6 +270,20 @@ public class VetService : IVetService
         return assignment is null ? null : MapToAssignmentDto(assignment);
     }
 
+    public async Task<VetAssignmentDto?> GetAssignmentByIdAsync(int assignmentId, string vetUserId)
+    {
+        Guard.Against.NullOrWhiteSpace(vetUserId, nameof(vetUserId));
+
+        var assignment = await _context.VetAssignments
+            .Include(va => va.Pet)
+            .Include(va => va.VetProfile)
+            .FirstOrDefaultAsync(va =>
+                va.Id == assignmentId &&
+                va.VetProfile.UserId == vetUserId);
+
+        return assignment is null ? null : MapToAssignmentDto(assignment);
+    }
+
     public async Task<IEnumerable<VetAssignmentDto>> GetAssignmentsForPetAsync(int petId)
     {
         var assignments = await _context.VetAssignments
@@ -284,12 +307,13 @@ public class VetService : IVetService
 
         var totalCount = await query.CountAsync();
 
-        var items = await query
+        var items = (await query
             .OrderByDescending(vp => vp.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(vp => MapToProfileDto(vp))
-            .ToListAsync();
+            .ToListAsync())
+            .Select(MapToProfileDto)
+            .ToList();
 
         return new PagedResultDto<VetProfileDto>
         {
@@ -349,6 +373,14 @@ public class VetService : IVetService
 
         if (profile is null)
             return Result<bool>.Failure("Vet profile not found.");
+
+        // Validate no duplicate days in the incoming schedule
+        var duplicateDays = schedule
+            .GroupBy(e => e.DayOfWeek)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key);
+        if (duplicateDays.Any())
+            return Result<bool>.Failure($"Duplicate availability entries for: {string.Join(", ", duplicateDays)}");
 
         // Remove existing availability entries
         var existingAvailability = await _context.VetAvailability

@@ -67,6 +67,9 @@ public class MedicationRecord
         string? instructions,
         string? sideEffectsNoted)
     {
+        Guard.Against.NullOrWhiteSpace(medicationName, nameof(medicationName));
+        Guard.Against.NullOrWhiteSpace(dosage, nameof(dosage));
+        Guard.Against.NullOrWhiteSpace(frequency, nameof(frequency));
         MedicationName = medicationName;
         Dosage = dosage;
         Frequency = frequency;

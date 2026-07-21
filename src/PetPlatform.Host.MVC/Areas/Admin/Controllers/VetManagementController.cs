@@ -41,12 +41,26 @@ public class VetManagementController : Controller
 
     public async Task<IActionResult> Details(int id)
     {
-        var profiles = await _vetService.GetAllVetProfilesAsync(1, 1000, null);
-        var vetProfile = profiles.Items.FirstOrDefault(vp => vp.Id == id);
+        var vetProfile = await _context.VetProfiles.FindAsync(id);
         if (vetProfile is null) return NotFound();
 
-        ViewData["Title"] = $"Vet: {vetProfile.FullName}";
-        return View(vetProfile);
+        var profileDto = new VetProfileDto
+        {
+            Id = vetProfile.Id,
+            UserId = vetProfile.UserId,
+            FullName = vetProfile.FullName,
+            Clinic = vetProfile.Clinic,
+            Specialty = vetProfile.Specialty,
+            Bio = vetProfile.Bio,
+            ServicesOffered = vetProfile.ServicesOffered,
+            IsAvailable = vetProfile.IsAvailable,
+            IsApproved = vetProfile.IsApproved,
+            CreatedAt = vetProfile.CreatedAt,
+            UpdatedAt = vetProfile.UpdatedAt
+        };
+
+        ViewData["Title"] = $"Vet: {profileDto.FullName}";
+        return View(profileDto);
     }
 
     public async Task<IActionResult> PendingApprovals()
@@ -97,20 +111,41 @@ public class VetManagementController : Controller
 
         const int pageSize = 20;
 
-        // Combine all three record types into a unified view
-        var vaccinations = await _context.VaccinationRecords
+        // Query each record type with DB-level filtering and Take to limit per-type fetch
+        var vaccinationsQuery = _context.VaccinationRecords
             .Include(v => v.Pet)
-            .OrderByDescending(v => v.DateAdministered)
-            .ToListAsync();
+            .AsQueryable();
 
-        var medications = await _context.MedicationRecords
+        var medicationsQuery = _context.MedicationRecords
             .Include(m => m.Pet)
-            .OrderByDescending(m => m.StartDate)
+            .AsQueryable();
+
+        var visitNotesQuery = _context.VetVisitNotes
+            .Include(v => v.Pet)
+            .AsQueryable();
+
+        if (petId.HasValue)
+        {
+            vaccinationsQuery = vaccinationsQuery.Where(v => v.PetId == petId.Value);
+            medicationsQuery = medicationsQuery.Where(m => m.PetId == petId.Value);
+            visitNotesQuery = visitNotesQuery.Where(v => v.PetId == petId.Value);
+        }
+
+        // Fetch a reasonable upper bound per type for in-memory combination
+        // then combine, sort, and paginate in memory
+        var vaccinations = await vaccinationsQuery
+            .OrderByDescending(v => v.DateAdministered)
+            .Take(page * pageSize)
             .ToListAsync();
 
-        var visitNotes = await _context.VetVisitNotes
-            .Include(v => v.Pet)
+        var medications = await medicationsQuery
+            .OrderByDescending(m => m.StartDate)
+            .Take(page * pageSize)
+            .ToListAsync();
+
+        var visitNotes = await visitNotesQuery
             .OrderByDescending(v => v.VisitDate)
+            .Take(page * pageSize)
             .ToListAsync();
 
         // Map to summary DTOs

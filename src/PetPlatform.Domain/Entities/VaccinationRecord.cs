@@ -53,6 +53,7 @@ public class VaccinationRecord
         DateTime? nextDueDate,
         string? notes)
     {
+        Guard.Against.NullOrWhiteSpace(vaccineName, nameof(vaccineName));
         VaccineName = vaccineName;
         DateAdministered = dateAdministered;
         BatchLotNumber = batchLotNumber;

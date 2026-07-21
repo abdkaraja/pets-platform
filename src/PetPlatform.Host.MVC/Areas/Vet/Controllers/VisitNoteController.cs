@@ -80,6 +80,12 @@ public class VisitNoteController : Controller
         var record = await _medicalRecordService.GetVisitNoteByIdAsync(id);
         if (record == null) return NotFound();
 
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
+        var assignment = await _vetService.GetActiveAssignmentAsync(record.PetId, userId);
+        if (assignment == null) return Forbid();
+
         ViewData["Title"] = $"Visit Note — {record.VisitDate.ToString("MMM dd, yyyy")}";
         return View(record);
     }

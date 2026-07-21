@@ -60,6 +60,10 @@ public class VetVisitNote
         string plan,
         string? notes)
     {
+        Guard.Against.NullOrWhiteSpace(subjective, nameof(subjective));
+        Guard.Against.NullOrWhiteSpace(objective, nameof(objective));
+        Guard.Against.NullOrWhiteSpace(assessment, nameof(assessment));
+        Guard.Against.NullOrWhiteSpace(plan, nameof(plan));
         VisitDate = visitDate;
         Subjective = subjective;
         Objective = objective;

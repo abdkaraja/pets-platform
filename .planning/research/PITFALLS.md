@@ -1,299 +1,280 @@
 # Pitfalls Research
 
-**Domain:** Pet Platform Web Application (ASP.NET Core MVC, Clean Architecture)
-**Researched:** 2026-07-18
+**Domain:** Pet Platform Web Application (ASP.NET Core MVC, Clean Architecture) — Vet Dashboard & Reminders Focus
+**Researched:** 2026-07-21
 **Confidence:** MEDIUM
 
 ## Critical Pitfalls
 
-### Pitfall 1: Clean Architecture Over-Engineering on Simple CRUD
+### Pitfall 1: SOAP Notes as Unstructured Text Dump (Clinical Data Lost)
 
 **What goes wrong:**
-Teams adopt a full Clean Architecture template (4+ projects, MediatR, AutoMapper, generic repositories, unit-of-work, specification pattern) for what is fundamentally a CRUD application with thin business logic. The result is 4 files per endpoint, 3 mapping layers, and a "domain" that is just data classes with public getters/setters and no behavior. Every feature takes 3x longer than it should.
+SOAP notes are implemented as a single `Text` field (or `Subjective`, `Objective`, `Assessment`, `Plan` as four `string` columns) with no structure. Vets paste free‑form text. Later, the system cannot query “all dogs with ear infections this month,” cannot generate a treatment summary, cannot warn about drug interactions, and cannot produce a clean export for a referring vet. The SOAP note becomes a digital paper trail that nobody can search or analyze.
 
 **Why it happens:**
-Pet platforms have straightforward domain rules (inventory math, adoption status transitions, appointment scheduling). Developers copy enterprise templates without asking whether the complexity is warranted. The PROJECT.md mandates Clean Architecture with 4 layers, making this pitfall especially dangerous because the team may feel compelled to over-engineer.
+SOAP is a *mnemonic*, not a schema. Developers hear “Subjective, Objective, Assessment, Plan” and translate it into four text fields. The vet demo looks fine—everyone types a paragraph. But veterinary medicine depends on structured data (diagnoses coded to ICD‑10‑CM or AVMA terms, vitals with units, body‑weight‑based dosage calculations). Without structure, the vet dashboard is just a note‑taking app, not a clinical tool.
 
 **How to avoid:**
-- Implement the Dependency Rule (dependencies point inward) but skip MediatR, generic repositories, AutoMapper, and unit-of-work until a real problem demands them.
-- Use `IApplicationDbContext` interface to give the Application layer EF Core access without a repository wrapper.
-- Keep mapping to TWO layers max: Domain entity (for writes) and ViewModel/DTO (shaped for the UI). Use manual mapping or a lightweight mapper.
-- Follow PrepStack's rule: "If you cannot name three real business rules that belong in the Domain layer, you probably do not need a Domain layer yet."
-- Start with a single ASP.NET Core project organized by feature folders. Refactor toward Clean Architecture boundaries when the pain of tight coupling exceeds the cost of layering.
+- Model SOAP as a **composite entity**: `SoapNote` header (timestamp, vet, pet, visit type) with separate child tables for `SubjectiveNote`, `VitalSigns` (weight_kg, temperature_c, heart_rate, respiratory_rate), `Diagnosis` (coded term, laterality, severity), `AssessmentNote`, and `PlanNote`.
+- Store free‑text *and* structured fields; the free‑text is the vet's narrative, the structured fields are what the software queries.
+- Provide a lookup list for common diagnoses (start with AVMA’s diagnostic terms or SNOMED‑CT Vet). Allow free‑text when the list doesn’t cover, but flag “uncoded” for later cleanup.
+- Use `decimal` for vitals (weight_kg, temperature) — never `string`. Units belong in the column name or a separate `Unit` lookup; mixing “kg” and “lbs” in free text creates dosage errors.
+- Start simple: a `SoapNote` entity with `Subjective`, `Objective`, `Assessment`, `Plan` strings *plus* `VitalSigns` as a separate JSON column or table. Extend later. The key is to *capture* structured data from day one, not retrofit.
 
 **Warning signs:**
-- 80% of "use cases" are 3-line Add + SaveChanges operations
-- Entities have no methods, only properties
-- Moving between layers consumes more time than writing features
-- AutoMapper profiles are identical to the EF entity shape
-- Program.cs exceeds 100 lines of DI registrations
+- Vets complain they can't search old notes by diagnosis.
+- The SOAP form has four large text areas and nothing else.
+- Vital signs are typed as “Wt 12kg, T 101.2, HR 120” in the Subjective field.
+- No plan to ever export medical records to another system.
 
 **Phase to address:**
-Phase 0 (foundation) — resist over-engineering from the start. The project template should be deliberately boring: plain service classes, DbContext through an interface, hand-written mapping methods. Add MediatR or CQRS only when a use case in Phase 2+ genuinely benefits from it.
+Phase 0 (domain model for medical records) — the `SoapNote` entity must be designed before any UI is built. Retrofitting structure after months of free‑text notes is a migration nightmare.
 
 ---
 
-### Pitfall 2: Anaemic Domain Model with Logic in Controllers
+### Pitfall 2: Treatment Plans as Static Documents (No Link to SOAP or Prescriptions)
 
 **What goes wrong:**
-Business rules for adoption eligibility, appointment scheduling conflicts, inventory thresholds, and medical record access permissions end up in controllers or application services rather than on domain entities. The domain layer becomes a data bag with public setters. Controllers grow fat, tests require mocking everything, and rule changes scatter across the codebase.
+Treatment plans are built as standalone PDFs or static Razor pages. They are not linked to the SOAP note that created them, not linked to the prescriptions that implement them, and not linked to the pet’s medical record timeline. When the vet updates the treatment plan, the old plan disappears. When the owner asks “what was the plan after the last visit?”, there is no audit trail.
 
 **Why it happens:**
-ASP.NET Core MVC encourages the "thin controller, fat service" pattern organically. Developers default to putting logic in services because it's the path of least resistance. The Clean Architecture constraint makes it worse — entities feel like "just models" while services feel like "where the real code goes."
+Treatment plans feel like “documents” — something you print and hand to the owner. Developers build a “Print Treatment Plan” button and call it done. But a treatment plan is a *workflow*: it has a start date, expected duration, milestones (re‑check in 2 weeks), and linked prescriptions. Without relationships, the plan is disconnected from the clinical narrative.
 
 **How to avoid:**
-- Enforce private setters on domain entities. The only way to change state is through entity methods (e.g., `pet.MarkAsAdopted()`, `appointment.Reschedule(newTime)`) that enforce invariants.
-- Put validation rules on the entity, not in a service validator. `appointment.OverlapsWith(existingAppointments)` belongs on Appointment, not in a service.
-- Use factory methods (`Pet.RegisterForAdoption(...)`) instead of public constructors + property setting.
-- Controllers should only: parse input, call a service, map result to view model, return response. Nothing more.
+- Model `TreatmentPlan` as an entity with foreign keys to `Pet`, `Vet`, and the originating `SoapNote`.
+- `TreatmentPlan` has a one‑to‑many relationship with `Prescription` (each prescription belongs to a plan) and a one‑to‑many with `TreatmentMilestone` (re‑check dates, lab re‑tests).
+- Store plan status: `Active`, `Completed`, `Cancelled`. A pet can have only one `Active` plan per condition at a time.
+- Provide a timeline view: Pet → [SOAP Note] → [Treatment Plan] → [Prescriptions] → [Reminders] — each node links to the next.
+- The print/export function is *derived* from the entity, not the source of truth.
 
 **Warning signs:**
-- Controllers exceeding 60 lines
-- Domain entities with all public get/set and zero methods
-- `if` statements about business rules inside controller actions
-- Domain project compiles with zero test coverage because "there's nothing to test"
+- Treatment plan has no foreign key to `SoapNote` or `Pet`.
+- Prescriptions are not linked to a treatment plan.
+- No status field (Active/Completed) on the treatment plan.
+- The “treatment plan” is a byte array or PDF blob stored in the database.
 
 **Phase to address:**
-Phase 0 (domain layer design) — establish the pattern before any feature work. Create the first entity (e.g., Pet) with private setters, factory methods, and invariants. Use it as the template for all later entities.
+Phase 1 (domain model for treatment plans) — must be designed alongside `SoapNote` and `Prescription` entities. The relationships are the architecture.
 
 ---
 
-### Pitfall 3: Cross-Tenant Data Leakage (Multi-Tenant Isolation Failure)
+### Pitfall 3: Prescription Dosage Calculations Done in the UI Layer
 
 **What goes wrong:**
-A pet platform serves multiple shelters, vet clinics, or pet owners. A missing `Where(t => t.TenantId == currentTenant)` in a query, a background job without tenant context, a raw SQL report that bypasses EF Core filters, or a cache miss on tenant-scoped keys — any of these can expose Shelter A's adopters, Vet B's patient records, or Owner C's medical data to another tenant. In staging with one tenant, the bug is invisible. In production, it's a data leak.
+The vet enters “10 mg/kg twice daily for 7 days” in a text field. The JavaScript frontend calculates total tablets, but the server never validates the dosage. A typo (“100 mg/kg” instead of “10 mg/kg”) produces a lethal prescription. The system stores the *text* of the dosage, not the *numbers*, so later queries (“show me all dogs on high‑dose steroids”) are impossible. Audit trails show the vet “prescribed 100 mg/kg” with no system warning.
 
 **Why it happens:**
-Multi-tenancy is designed at the database level (shared schema with TenantId columns) but enforcement is manual. Developers forget filters. Background jobs run outside HTTP request scope and lose tenant context. Caching is implemented without tenant-aware keys. Raw SQL bypasses EF Core global query filters entirely.
+Dosage math feels like a presentation concern. “The vet knows what they’re doing.” But clinical software has a duty to catch arithmetic errors. Without server‑side validation, the system is a note‑pad, not a safety net.
 
 **How to avoid:**
-- Use EF Core global query filters as the primary isolation mechanism — they automatically add `WHERE TenantId = @tid` to every query without developer action.
-- Inject a scoped `ITenantContext` into the `DbContext`; capture the context object reference (not its current value) in the filter lambda.
-- Override `SaveChangesAsync` to automatically assign `TenantId` on insert — make it impossible to create a record without one.
-- For background jobs: store `TenantId` in the job payload. The handler must restore tenant context before accessing data.
-- Cache keys MUST be namespaced by tenant: `$"Tenant:{tenantId}:CacheKey"`.
-- Raw SQL in reports must explicitly include `TenantId` conditions — document every bypass with a code comment.
-- Composite indexes must start with `TenantId` — without this, every query is a full table scan at scale.
-- Integration tests must verify Tenant A cannot read Tenant B's data. Run tests with multiple simulated tenants.
+- Model `Prescription` with *structured* fields: `DrugName`, `DosagePerKg` (decimal), `WeightKg` (decimal, pulled from the pet’s latest recorded weight), `Frequency` (enum: BID, TID, SID, QID), `DurationDays` (int), `TotalQuantity` (decimal, computed).
+- Compute `TotalQuantity = DosagePerKg * WeightKg * Frequency * DurationDays` on the server. Display it to the vet for confirmation. Reject if the computed total exceeds a configurable threshold (e.g., > 500 tablets — clearly a typo).
+- Store `WeightKg` at the time of prescription (snapshot), not just a reference to the pet’s current weight. Pets gain/lose weight; a prescription written for a 12 kg dog that is now 20 kg could be under‑dosed.
+- Provide a drug interaction checker (start with a local table of common vet drug pairs; extend to an API later). Block or warn on dangerous combinations.
+- The prescription entity must be **immutable after dispensing** — edits create a new prescription record, preserving the audit trail.
 
 **Warning signs:**
-- Any query using `IgnoreQueryFilters()` without manually re-adding tenant conditions
-- Background job handlers that don't reference `ITenantContext`
-- Cache keys without tenant prefix
-- Raw SQL strings in Infrastructure that lack `WHERE TenantId =`
-- Staging environments with only one tenant (test with 3+ tenants minimum)
+- Dosage is a free‑text field (e.g., “1 tab BID”).
+- No server‑side calculation of total quantity.
+- No weight snapshot on the prescription.
+- Prescriptions can be edited after being marked “dispensed.”
 
 **Phase to address:**
-Phase 0 (infrastructure setup) — multi-tenancy must be designed and tested before any data flows. Retrofitting tenant isolation after data exists is a migration nightmare.
+Phase 1 (prescription entity design) — dosage logic belongs in the domain model, not in Razor view JavaScript.
 
 ---
 
-### Pitfall 4: ASP.NET Core Middleware Ordering That Breaks Auth/Security
+### Pitfall 4: Reminder System as a Cron Job That Emails Only
 
 **What goes wrong:**
-`UseAuthorization` is placed before `UseAuthentication`, so the user principal is never populated and all auth checks return 401. Exception handling middleware is registered too late and doesn't catch exceptions from routing/endpoints. CORS middleware is placed after auth middleware, so preflight requests that fail auth never get CORS headers. Static file middleware is placed after routing, wasting CPU on requests that could short-circuit. The result is subtle security bugs that only surface in production behind a reverse proxy.
+Vaccination and medication reminders are implemented as a single `Hangfire` or `BackgroundService` job that runs daily, queries all pets, and sends an email for every reminder due today. No SMS, no push, no in‑app notification. The owner never sees the email (it’s in spam). The vet has no visibility into which reminders were sent, which bounced, which were acknowledged. When the background job fails at 3 AM, nobody knows — pets miss vaccinations.
 
 **Why it happens:**
-ASP.NET Core's middleware pipeline is a chain where order determines behavior. Developers copy-paste middleware order from tutorials or templates without understanding the semantics. The pet platform uses Razor Views + jQuery (server-rendered), which means cookie auth and anti-forgery tokens add additional ordering constraints.
+“A reminder is just a scheduled email.” Developers pick the simplest path: a daily timer, an email send, call it done. But reminders are a **multi‑channel, multi‑stakeholder communication system**. The vet needs to know the owner got the reminder. The owner needs to see it in the app. The platform needs to know if it bounced.
 
 **How to avoid:**
-Follow this canonical middleware order (from Microsoft's documentation, verified against current .NET LTS):
-
-```
-// 1. Exception handling (FIRST — catch everything)
-if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
-else { app.UseExceptionHandler("/error"); app.UseHsts(); }
-
-// 2. HTTPS redirect
-app.UseHttpsRedirection();
-
-// 3. Static files (BEFORE routing — short-circuit early)
-app.UseStaticFiles();
-
-// 4. Routing
-app.UseRouting();
-
-// 5. CORS (BETWEEN UseRouting and UseAuthentication)
-app.UseCors("PolicyName");
-
-// 6. Authentication (BEFORE Authorization)
-app.UseAuthentication();
-
-// 7. Authorization (AFTER Authentication)
-app.UseAuthorization();
-
-// 8. Anti-forgery (custom middleware, AFTER auth)
-// 9. Tenant resolution middleware
-// 10. Endpoints
-app.MapControllers();
-```
-
-- Register custom middleware (tenant resolution, request logging, anti-forgery) at the correct layer relative to auth.
-- Use middleware, not filters, for cross-cutting concerns that must run on every request.
+- Model `Reminder` as an entity with: `PetId`, `ReminderType` (Vaccination, Medication, Checkup, Lab), `Channel` (Email, SMS, InApp, Push), `ScheduledDate`, `Status` (Pending, Sent, Delivered, Acknowledged, Failed, Bounced), `SentAt`, `AcknowledgedAt`.
+- The background job *creates* Reminder records; a separate *sender* service picks up `Pending` reminders and dispatches them via the appropriate channel. This separation allows retry, channel switching, and auditing.
+- Provide an **in‑app notification center** (Razor partial + jQuery) that shows pending reminders on the owner’s dashboard. This is the primary channel; email/SMS are fallbacks.
+- The vet dashboard shows a “Reminder Status” panel: how many reminders are pending, sent, failed. Failed reminders trigger an alert.
+- Use the **Outbox pattern**: write the reminder to the Outbox table in the same transaction as the business event (e.g., vaccination administered → create reminder for next dose). Background worker sends from Outbox. This guarantees at‑least‑once delivery without duplicating.
 
 **Warning signs:**
-- 401 errors that persist even with valid credentials
-- CORS errors in browser console that appear random
-- Stack traces from ASP.NET Core internals reaching the client in production
-- `UseAuthorization` called without `UseAuthentication` before it
+- Reminder is a single `DateTime` field on the pet entity.
+- Only email channel, no in‑app or SMS.
+- No status tracking (sent/delivered/acknowledged).
+- Background job has no dead‑letter queue or retry policy.
+- Owner has no way to see reminders without checking email.
 
 **Phase to address:**
-Phase 0 (host configuration in Program.cs) — get the middleware pipeline right during initial project setup. It is cheap to fix now, expensive to debug later.
+Phase 2 (reminder infrastructure) — the Outbox + multi‑channel architecture must be designed before any reminder UI is built. Retrofitting the Outbox after reminders are already firing via a cron job is a rewrite.
 
 ---
 
-### Pitfall 5: Petfinder/Third-Party API Dependency as a Single Point of Failure
+### Pitfall 5: Vaccination Schedule Hardcoded Instead of Configurable per Species/Breed
 
 **What goes wrong:**
-The pet adoption or lost-pets module integrates with Petfinder, Adopt-a-Pet, or RescueGroups for listing syndication. When Petfinder's API goes down (as happened in Dec 2025 — lasting months, preventing shelters from uploading photos, dropping adoption inquiries by 95%), the platform's core feature is non-functional. The platform has no fallback, no cache, and no way for shelters to manage listings independently. The app is a thin wrapper around someone else's service.
+The vaccination reminder schedule is hardcoded: “Rabies every year, DHPP every 3 years.” But vaccination schedules vary by species (dog vs cat vs rabbit), breed (some breeds require more frequent heartworm testing), region (rabies laws differ by state/country), and vaccine manufacturer (some rabies vaccines are 3‑year, some are 1‑year). The system sends incorrect reminders. Vets override manually. The feature is abandoned.
 
 **Why it happens:**
-Third-party APIs offer quick feature velocity. Developers integrate deeply (pet listings, photos, application forms all flow through the external API) without designing for API failure modes. The pet platform's PROJECT.md doesn't mention third-party dependencies explicitly, making this an unexamined risk.
+Hardcoding is fast for the demo. “We’ll make it configurable later.” Later never comes because the hardcoded version “works” for the most common case. But veterinary medicine is full of exceptions — and the exceptions are the ones that matter for patient safety.
 
 **How to avoid:**
-- Design the pet listing system with its own database schema as the single source of truth. Third-party APIs are sync targets/discovery channels, not data backends.
-- Implement an sync service (cron or background job) that pushes local data TO Petfinder, Adopt-a-Pet, etc., and pulls listings FROM them into a local cache.
-- When APIs are down, fall back to local cached data with a "last updated" banner. The platform should never show a 404 or empty state because Petfinder is slow.
-- Use the Outbox pattern for outbound sync — persist the sync message in a local table, dispatch from a background worker. Never sync in the request path.
-- Monitor API health and alert when third-party syndication falls behind.
+- Create a `VaccinationProtocol` entity: `Species`, `Breed` (nullable), `VaccineName`, `IntervalMonths`, `FirstDoseAgeMonths`, `BoostersRequired`, `Region` (nullable).
+- The reminder creation logic reads from `VaccinationProtocol` to compute the next due date. The vet can override per‑patient (e.g., “this dog gets DHPP every 2 years due to titer testing”).
+- Seed the table with AVMA’s core vaccine guidelines (AAHA Canine Vaccination Protocol, AAFP Feline Vaccination Protocol). Allow the vet clinic to add custom protocols.
+- The UI shows a “Suggested Schedule” dropdown based on species/breed, pre‑populated from the protocol table. The vet confirms or overrides.
 
 **Warning signs:**
-- Pet listings are fetched from Petfinder API on every page load (no local cache)
-- Shelter staff cannot update listings when Petfinder is down
-- The platform has no local pet database — it's a pure API proxy
-- No retry logic, no circuit breaker, no fallback content
+- Vaccination schedule is in a switch statement or hardcoded intervals in the reminder job.
+- No `VaccinationProtocol` entity in the domain model.
+- “We’ll add a config page later” — config page is the foundation, not a later addition.
 
 **Phase to address:**
-Phase 3 (adoption/lost-pets module) — the data model and sync architecture must be designed in Phase 0 (foundation). The local pet entity is a core domain concept that predates any third-party integration.
+Phase 1 (vaccination protocol entity) — the data model must support per‑species/breed schedules before any reminder logic is written.
 
 ---
 
-### Pitfall 6: N+1 Queries and EF Core Performance Traps at Pet Platform Scale
+### Pitfall 6: Medication Reminder Frequency Ignoring Pet’s Daily Routine
 
 **What goes wrong:**
-The pet listing page loads 50 pets. For each pet, EF Core lazily loads breed, photos, medical records, and adoption status — 201 queries for one page view. The vet dashboard loads all patients without pagination. The admin dashboard loads every pet, adopter, and transaction into a single view. At 100 users the app is fine. At 1,000 users the database CPU hits 100%. At 10K users the app is unusable.
+The system sends a medication reminder at 9 AM every day. But the pet’s medication is “with food, twice daily” — the owner feeds the pet at 7 AM and 6 PM. The 9 AM reminder is irrelevant and ignored. After three ignored reminders, the owner disables notifications entirely. The pet misses doses.
 
 **Why it happens:**
-Pet platforms have deeply nested entities (Pet → Appointments → MedicalRecords → Vaccinations; Pet → AdoptionApplications → Adopter → HomeChecks). Developers use `.Include()` chains without selectivity, fail to call `AsNoTracking()` on read-only queries, load full entities when only a summary is needed, and skip pagination because "we only have 50 pets right now."
+Frequency is modeled as a simple interval (every 12 hours) without considering the pet’s feeding schedule, the owner’s routine, or the medication’s pharmacokinetic requirements. The reminder is technically correct but practically useless.
 
 **How to avoid:**
-- Every list endpoint MUST have pagination from day one (page-based for small sets, cursor-based for large feeds). Default page size of 20, max of 100.
-- Use `AsNoTracking()` on ALL read-only queries. This is the default for queries — only omit it when you need change tracking.
-- Use projection (`.Select(x => new PetSummaryDto {...})`) instead of `.Include()` chains for list views. Load only the columns the view needs.
-- For dashboards, use a dedicated read model (denormalized table or in-memory cache) rather than querying the OLTP schema.
-- Add composite indexes with TenantId as the leading column on all high-traffic tables.
-- Create an EF Core interceptor that warns when a single request generates more than 5 database queries (N+1 detection).
-- Use compiled queries for the most-called read paths (e.g., pet detail page, user profile).
+- Model `MedicationSchedule` with: `MedicationName`, `Frequency` (enum: BID, TID, SID, QID, PRN), `PreferredTimes` (list of TimeOnly — e.g., ["07:00", "18:00"]), `WithFood` (bool), `FoodOffsetMinutes` (int — e.g., 30 minutes after feeding).
+- The owner configures feeding times in the pet profile. The system computes reminder times relative to feeding.
+- Provide a “snooze” or “reschedule” option on reminders — if the owner is running late, they can shift the reminder by 30 minutes, not just dismiss it.
+- Track adherence: if a reminder is dismissed 3 times in a row without acknowledgment, send a “gentle nudge” or alert the vet.
 
 **Warning signs:**
-- Page load times increase linearly with record count
-- SQL Server shows high CPU from repeated identical queries
-- Entity Framework logging reveals hundreds of queries per request
-- Any endpoint without explicit `.Take()` / `.Skip()` or `AsNoTracking()`
-- Linq queries inside `foreach` loops
+- Reminder time is hardcoded (e.g., always 9 AM).
+- No concept of “with food” or feeding schedule.
+- Reminder is a simple `DateTime` field with no preferred time configuration.
+- Adherence tracking is absent — the system doesn’t know if the owner gave the medication.
 
 **Phase to address:**
-Phase 0 (repository / data access layer) — establish pagination, AsNoTracking, and projection patterns before any feature creates queries. Every phase should have a performance review gate.
+Phase 2 (medication reminder design) — the schedule model must be flexible from the start. Hardcoded times are a dead end.
 
 ---
 
-### Pitfall 7: Building the Platform for Adopters Without Building for Shelters/Vets First
+### Pitfall 7: Vet Dashboard Without Role‑Based Data Segmentation
 
 **What goes wrong:**
-The pet adoption feature focuses entirely on the adopter experience: beautiful pet galleries, smooth application flow, mobile-first design. But shelters find the platform adds to their workload — they have to manually update listings in Petfinder AND the platform's database, adoption applications arrive as PDFs they must re-enter, and there's no dashboard to track inquiries. Shelters stop listing. Without supply, there's no demand. The platform stalls.
+The vet dashboard shows **all** pets in the system. A vet at Clinic A sees Clinic B’s patients. A vet sees pets belonging to other vets in the same clinic (should only see their own patients unless they’re a supervisor). The admin sees the same view as the vet. There’s no concept of “my patients” vs “all patients in my clinic” vs “all patients in the system.”
 
 **Why it happens:**
-This is the classic marketplace cold-start problem. Most pet platforms fail not because of technology but because "they were built for adopters without building for shelters first" (per the LOW/CODE pet adoption marketplace analysis). Shelters are understaffed, running on spreadsheets and ad-hoc tools. If the platform increases their workload, they won't participate.
+The initial implementation uses a simple `WHERE Role = 'Vet'` filter. Multi‑tenancy (clinic isolation) is handled by `TenantId`, but *within* a clinic, vets should only see their own patients unless they have a supervisor role. This intra‑tenant segmentation is often missed.
 
 **How to avoid:**
-- Every shelter/vet-facing feature must answer: "Does this reduce their administrative burden or increase it?"
-- Provide a unified dashboard where shelters manage all platforms (Petfinder sync, website listings, application tracking) from one place.
-- Auto-sync pet statuses across platforms — when a pet is adopted, it should update everywhere within hours, not weeks.
-- Digital adoption forms that shelters can review, approve/reject, and e-sign within the platform (no PDFs, no emails).
-- Offer a free tier for shelters — they have no budget for software.
-- Interview shelter staff directly during Phase 1 (requirements). Don't assume you know their workflow.
+- The vet dashboard must filter by `VetId = currentUser.Id` by default, with a toggle to “Show all patients in my clinic” (for supervisors/admins).
+- The `Pet` entity already has a `TenantId` (clinic). Add a `PrimaryVetId` foreign key to `Pet` (nullable — not all pets have a primary vet yet).
+- The vet dashboard query: `WHERE TenantId = currentTenant AND (PrimaryVetId = currentUser.Id OR currentUser.HasClaim("ClinicSupervisor"))`.
+- The admin dashboard shows all pets in the tenant. The super‑admin (platform admin) shows all tenants.
+- Write integration tests that verify Vet A cannot see Vet B’s patients within the same clinic (unless Vet A is a supervisor).
 
 **Warning signs:**
-- Shelter/vet features are an afterthought in sprint planning
-- "Shelters can just update Petfinder and we'll sync from there" (no — that's extra work for them)
-- Adoption applications arrive as email attachments
-- No way for a shelter to see all their active applications in one view
-- Shelters are not represented in user research
+- Vet dashboard loads all pets in the tenant with no vet‑level filter.
+- No `PrimaryVetId` on the Pet entity.
+- No distinction between “my patients” and “all clinic patients.”
+- No supervisor role defined in the claims system.
 
 **Phase to address:**
-Phase 1 (discovery/interview) — shelter workflow understanding must precede Phase 3 (adoption module). Build shelter tools in Phase 3 alongside adopter features, not after.
+Phase 0 (vet dashboard foundation) — the data segmentation must be designed before any dashboard UI is built. Retrofitting `PrimaryVetId` after months of data is painful.
 
 ---
 
-### Pitfall 8: Over-Expansion and Unit Economics Ignorance
+### Pitfall 8: Reminder Overload (Notification Fatigue)
 
 **What goes wrong:**
-The platform launches with e-commerce, adoption, lost pets, and medical records simultaneously. Marketing spend is high. CAC exceeds LTV. The vet telemedicine feature relies on pandemic-era demand patterns. The marketplace grows to multiple cities before unit economics are proven in one. When funding dries up, the fixed-cost base (hosting, staff, warehouses) can't shrink fast enough. The platform collapses.
+The system sends a vaccination reminder, a medication reminder, a checkup reminder, and a “pet’s birthday” reminder — all on the same day. The owner receives 4 notifications, ignores all of them. After a week, they disable notifications entirely. Critical vaccination reminders are missed.
 
 **Why it happens:**
-The pet industry is emotionally compelling. Founders fall in love with the vision and skip the hard questions: "What does it cost to acquire a customer?" "What is their lifetime value?" "What happens when the pandemic pet boom fades?" The pet startup autopsy data is brutal: BarkBox ($1.6B → $1.20/share), Vetster ($63M raised → acquired at 60% below B-round), Fuzzy ($80.5M → shutdown with no notice), PetBacker ($2.5M → 40% revenue recovery → shutdown), Zumvet ($4.8M → disappeared overnight). Every one of these failed on unit economics.
+Each reminder feature is built independently. No one designs a **notification budget** or **digest** system. The platform optimizes for “completeness” (never miss a reminder) but the owner experiences spam.
 
 **How to avoid:**
-- Build one feature well before adding the next. The PROJECT.md already lists 6+ feature areas — this is a warning sign, not a strength.
-- Validate unit economics in ONE market before expanding. Vetster's Mark Bordo: "build supply before demand" — but even they couldn't escape pandemic normalization.
-- Model pessimistic scenarios: "What if post-pandemic demand drops 40-60%?" Vetster didn't, and it killed them.
-- Keep a lean fixed-cost base. Outsource fulfillment. Use shared hosting until traffic proves dedicated infrastructure.
-- Track cohort-level metrics (not just aggregate): subscriber count over 3+ consecutive quarters of decline = structural, not seasonal.
-- Do not raise at peak valuation during a tailwind. "SPAC valuations built on pandemic-era subscriber curves ignore mean reversion."
+- Implement a **notification digest**: group all reminders for a pet into a single daily or weekly summary (configurable by the owner).
+- Provide **priority levels** on reminders: `Critical` (vaccination overdue, medication missed), `Normal` (upcoming checkup), `Informational` (pet birthday). Critical reminders are immediate; others are batched.
+- The owner can configure quiet hours (no notifications between 10 PM and 7 AM) and preferred delivery time (e.g., “send digest at 8 AM”).
+- Track notification engagement: if open rate drops below 30%, suggest the owner switch to weekly digest.
 
 **Warning signs:**
-- Revenue grows but losses grow faster
-- Multiple features are "in development" before any one is profitable
-- Marketing spend as a percentage of revenue exceeds 50%
-- No clear path to breakeven at current burn rate
-- "We'll figure out the business model later" mentality
+- Owner receives more than 2 notifications per day on average.
+- No digest option.
+- No priority levels on reminders.
+- No quiet hours configuration.
 
 **Phase to address:**
-Phase 1 (MVP scoping) — the ROADMAP must prioritize one vertical (e.g., e-commerce) and prove unit economics before expanding to adoption, lost pets, and medical records. This is a product strategy decision, not an engineering one, but the project structure must enforce it.
+Phase 2 (reminder UX design) — the digest and priority system must be designed alongside the reminder entity, not added as an afterthought.
 
 ---
 
-### Pitfall 9: Stale Pet Listings Destroy Trust
+### Pitfall 9: Prescription refill Tracking Falls Through the Cracks
 
 **What goes wrong:**
-Pet listings on the platform show animals that were adopted weeks ago. Users apply for pets that are no longer available. They drive to a shelter that no longer has the animal. 42.5% of shelter websites in a 200-site audit had listings over 30 days stale. Adoption inquiry volume for sites with real-time sync was 340% higher than those without. Stale listings are the #1 reason potential adopters give up.
+A pet is prescribed a 30‑day medication. The system sends a reminder on day 30 to “refill prescription.” But the owner needs to refill on day 25 (to avoid running out). The system doesn’t track when the prescription was *dispensed* vs when it *expires*. The owner runs out of medication for 3 days. The vet gets an angry call.
 
 **Why it happens:**
-Pet statuses change constantly (adopted, fostered, medical hold, returned). If the platform relies on manual updates ("the shelter will mark it as adopted"), it won't happen — shelters are too understaffed. If the platform syncs from Petfinder/adoption APIs, those APIs have their own latency (RescueGroups reports 48+ hour delays in data propagation).
+Refill tracking is modeled as “prescription end date = start date + duration.” But real‑world dispensing is messy: the pharmacy takes 2 days to deliver, the owner starts a day late, the vet authorizes an early refill. Without tracking actual dispensing and remaining supply, the reminders are wrong.
 
 **How to avoid:**
-- The platform's database is the single source of truth. All listing updates go through the local schema first.
-- Implement a "Pending" badge on animals with active applications — this creates urgency and signals transparency.
-- Provide a shelter dashboard widget showing "listings not updated in 7+ days" to prompt action.
-- For the lost-pets module: auto-expire listings after 30 days unless the owner confirms the pet is still missing.
-- Fall back gracefully: show a "Last updated: 2 hours ago" timestamp rather than hiding stale data.
-- During Phase 3 (adoption), enforce: no listing goes live without auto-expiry logic.
+- Model `PrescriptionRefill` with: `PrescriptionId`, `DispensedDate`, `QuantityDispensed`, `ExpectedEndDate` (computed from dispensing date + duration), `ActualEndDate` (when the owner marks it complete or the vet ends it).
+- Send a refill reminder at `ExpectedEndDate - 5 days` (configurable lead time).
+- Allow the owner to mark “I’ve refilled” which creates a new `PrescriptionRefill` record and resets the timer.
+- The vet dashboard shows “prescriptions running low” (expected end date within 7 days) as a priority panel.
 
 **Warning signs:**
-- Pet detail pages without "Last updated" timestamps
-- No mechanism for shelters to bulk-update listing statuses
-- Adopted pets still visible in search results
-- Users report: "I applied but the pet was already gone"
+- No `DispensedDate` on the prescription.
+- Refill reminder is based on prescription start date, not dispensing date.
+- No lead time configuration (e.g., “remind me 5 days before running out”).
+- No way for the owner to confirm refill.
 
 **Phase to address:**
-Phase 3 (adoption/lost-pets module) — auto-expiry, status sync, and freshness indicators must be designed as core features, not afterthoughts.
+Phase 1 (prescription entity) — the refill tracking fields must be part of the initial prescription model.
+
+---
+
+### Pitfall 10: Medical Record Export as Afterthought (Interoperability Failure)
+
+**What goes wrong:**
+The vet dashboard stores all SOAP notes, treatment plans, and prescriptions internally. When a pet is referred to a specialist, the referring vet has to print the records, scan them, and email PDFs. The specialist re‑enters the data into their system. There’s no structured export (FHIR, XML, or even a clean CSV). The platform is a data silo.
+
+**Why it happens:**
+Export feels like a “nice to have.” The team focuses on the UI and forgets that veterinary medicine is a network — pets move between vets, clinics, and shelters. Without export, the platform is a one‑way door: data goes in but doesn’t come out.
+
+**How to avoid:**
+- Design the medical record entities with export in mind from day one: every entity has a `CreatedDate`, `ModifiedDate`, `CreatedBy` (vet), and `TenantId`.
+- Provide a **FHIR‑compatible export** (even if it’s just a subset: Patient, Encounter, Condition, MedicationRequest). Use the FHIR R4 JSON format — it’s the standard for health data exchange.
+- At minimum, provide a **structured PDF** export that includes all SOAP notes, treatment plans, and prescriptions for a pet, formatted for clinical hand‑off.
+- The export function must respect tenant boundaries — Vet A cannot export Vet B’s records.
+
+**Warning signs:**
+- No export function on the vet dashboard.
+- Medical records are stored as blobs or unstructured text.
+- No `CreatedBy` or `CreatedDate` on clinical entities.
+- Export would require writing a new query from scratch.
+
+**Phase to address:**
+Phase 1 (medical record entity design) — audit fields and export‑friendly schema must be in the initial design. Adding them later means a migration and backfill.
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
+Shortcuts that seem reasonable but create long‑term problems.
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+| Shortcut | Immediate Benefit | Long‑term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| AutoMapper for ALL entity<->DTO mapping | Fast initial mapping | Mystery mappings that break at runtime; compilation errors deferred to runtime; 500+ line profiles | Never — use manual mapping or source generators (Mapperly). AutoMapper is tech debt from commit 1. |
-| Generic `IRepository<T>` for every entity | "Reusable" data access code | No repository is actually generic — each aggregate has different query needs; N+1 enabled because `IRepository<T>` exposes `IQueryable` | For true CRUD entities (lookup tables, audit logs). NOT for aggregates like Pet, Order, Appointment. |
-| Sync queries (`.ToList()` instead of `ToListAsync()`) | "Works fine on my machine" | Thread pool starvation at scale; request queueing; ASP.NET Core throughput collapse | **Never** — ASP.NET Core runs async-first. Sync calls block the thread pool. |
-| No pagination on list endpoints | "We only have 50 records" | At 500 records: page load slows. At 5K: database hit. At 50K: timeout. | **Never** — add pagination from day one. Default page size 20, max 100. |
-| Hardcoded connection strings in appsettings.json | Fast setup | Secret leaked to git; different configs across environments; no rotation | **Never** — use User Secrets in dev, environment variables in production. |
-| Storing images in the database (byte arrays) | "Everything in one place" | Database bloat; slow backups; CDN impossible; cache-unfriendly | **Never** — store files on disk or S3/compat, store paths in DB. |
-| Single DbContext class for everything | Simple, one class | As features grow, the DbContext becomes a 2000-line file; tenant filters get complex; migrations slow down | Acceptable for Phase 0-1. Split by bounded context in Phase 2+ (e.g., EcommerceDbContext, AdoptionDbContext). |
-| Skipping integration tests | "Unit tests are enough" | Multi-tenant data leaks undetected; EF Core query behavior unverified; middleware ordering bugs invisible | **Never** for tenant isolation and data access tests. Unit tests alone cannot verify tenant boundaries. |
+| Store SOAP notes as a single `string` column | Fast to implement, simple CRUD | Impossible to query by diagnosis, vitals, or treatment; export is garbage; analytics impossible | **Never** for a clinical system — the whole point of a vet dashboard is structured clinical data |
+| Dosage calculation in Razor/JS only | Fast to demo, no server‑side complexity | Lethal typos pass through; audit trail shows unvalidated dosages; no server‑side drug interaction check | **Never** — dosage math must be server‑side with validation |
+| Reminder as a `DateTime` field on Pet | Simple, no extra tables | Only one reminder per pet; no multi‑channel; no status tracking; no digest | **Never** — reminders are a first‑class entity |
+| Hardcoded vaccination schedule | Demo works in 10 minutes | Incorrect reminders for non‑standard protocols; vet overrides; feature abandoned | Only for a throwaway prototype — not for a clinical system |
+| Treatment plan as a PDF blob | Looks like a “document” | Not searchable, not linkable, not auditable, not updatable; the plan is a workflow, not a file | **Never** — treatment plans are entities with relationships |
+| Skip `AsNoTracking()` on vet dashboard queries | “It works fine” | EF Core tracking memory grows with every patient loaded; dashboard slows as patient count grows | **Never** — all read‑only dashboard queries must use `AsNoTracking()` |
+| No adherence tracking on medication reminders | “The reminder is enough” | Owner stops acknowledging; vet has no visibility into compliance; medication effectiveness is unknown | Acceptable for MVP *if* the vet dashboard explicitly shows “adherence tracking: coming soon” — but plan it from day one |
+| Single `Reminder` table with a `Type` column | Simple schema | All reminder types share the same fields; vaccination reminders need `ProtocolId`, medication reminders need `PrescriptionId` — the table becomes a god entity with nullable columns | Acceptable for MVP with 2–3 reminder types; split into separate entities when a fourth type is added |
 
 ---
 
@@ -303,12 +284,12 @@ Common mistakes when connecting to external services.
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Petfinder API | Calling Petfinder API on every page load; no local cache | Local pet database as source of truth; Petfinder is a sync destination and secondary discovery channel only |
-| Payment processor (Stripe) | Calling payment API synchronously in the request path; no idempotency key | Use Stripe's idempotency keys; dispatch payment confirmation to a background handler via outbox pattern |
-| Email/SMS (vet reminders, adoption follow-ups) | Sending from the request handler; no retry logic | Queue notifications in the database outbox; background worker sends with exponential backoff and dead-letter after max retries |
-| Image storage (pet photos) | Storing images on the web server's local disk | Use S3-compatible storage (or Azure Blob, MinIO for dev); serve via CDN; generate thumbnails asynchronously |
-| Shelter management software (ShelterLuv, PetPoint) | Building a direct integration to each one | Design an integration abstraction layer (e.g., `IShelterDataProvider`); implement one adapter per backend; use the Outbox pattern for sync |
-| Identity Provider (if not using ASP.NET Core Identity) | External auth token stored without local session; every request re-validates against IdP | Use ASP.NET Core Identity as the local identity store; external tokens are for login only; session is local |
+| Email provider (SendGrid, SMTP) | Sending from the request path; no retry on transient failures | Queue emails via Outbox; background worker sends with exponential backoff; dead‑letter after 3 retries |
+| SMS provider (Twilio, Vonage) | SMS sent synchronously; no delivery status webhook | Queue SMS like email; register Twilio status callback to update `Reminder.Status` to `Delivered` or `Bounced` |
+| Drug database API (e.g., veterinary drug formulary) | API called on every prescription save; no local cache | Cache drug data locally; sync nightly via background job; offline fallback with local table |
+| FHIR export endpoint | Building a full FHIR server for v1 | Provide FHIR *export* only (Patient, Encounter, Condition, MedicationRequest JSON); don’t build a FHIR server |
+| Notification push (Firebase, OneSignal) | Push notifications require mobile app (out of scope) | Defer push notifications; focus on in‑app + email + SMS for v1 |
+| Calendar integration (Google Calendar, Outlook) | Building a full calendar sync in v1 | Provide an `.ics` file download for appointments; full calendar sync is a future phase |
 
 ---
 
@@ -318,31 +299,28 @@ Patterns that work at small scale but fail as usage grows.
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| No pagination on list endpoints | Page load time grows linearly with row count | Default pagination on ALL list endpoints from day one | ~500 records |
-| Eager-loading entire entity graphs with `.Include()` | Large SQL queries with 8+ joins; slow serialization | Use `.Select()` projection for read paths; load only columns the view needs | ~50 records with 3+ navigation properties |
-| Missing `AsNoTracking()` on read-only queries | EF Core tracking memory grows with each request; CPU increases | Always call `AsNoTracking()` on queries that don't mutate data | ~1,000 entities tracked per request |
-| No index on TenantId column | Full table scans on every multi-tenant query; database CPU spikes | Add composite indexes starting with TenantId on every tenant-scoped table | ~10K rows per tenant |
-| Not using compiled queries for hot paths | EF Core query compilation overhead on every request | Use compiled queries for pet detail page, user profile, dashboard aggregates | ~100 requests/second |
-| Loading full entity objects for dashboards | Dashboard queries return 50+ columns when 4 are needed | Use dedicated read models/DTOs for dashboard data | ~5K rows |
-| Session state in-process (not distributed) | Session lost on app restart; cannot scale to multiple instances | Use SQL Server or Redis for session state | 2+ web server instances |
-| Background jobs without idempotency | Duplicate emails, double charges, duplicate adoption records | Every job handler must be idempotent — use a processed-events table for dedup | Any retry scenario |
+| Vet dashboard loads all patients without pagination | Page load time grows linearly with patient count; 500ms at 100 patients, 5s at 1,000 | Mandatory pagination (page size 20, max 100) on patient list; `AsNoTracking()` on all dashboard queries | ~500 patients |
+| Eager‑loading entire pet graph for SOAP note view | `.Include(p => p.MedicalRecords).ThenInclude(m => m.SoapNotes).ThenInclude(s => s.Prescriptions)` — 10+ joins | Use separate queries for each section (vitals, SOAP, prescriptions) or projection with `.Select()` | ~50 medical records per pet |
+| Reminder job queries all pets daily without index | Full table scan on `Pet` table; SQL Server CPU spikes at 3 AM when job runs | Index on `Reminder.ScheduledDate` and `Reminder.Status`; query only `Pending` reminders with `WHERE ScheduledDate <= Today` | ~10K pets |
+| Medication reminder deduplication via application logic | Every reminder check loads all pending reminders into memory, deduplicates in C# | Use a SQL `GROUP BY` with `MIN(ScheduledDate)` to deduplicate at the database level | ~5K active medication reminders |
+| SOAP note search without full‑text index | `WHERE Objective LIKE '%ear infection%'` — full table scan on every search | Enable SQL Server full‑text search on SOAP note text fields; or use a lightweight search library (Lucene.NET) | ~1K SOAP notes |
+| Dashboard aggregates computed on every page load | “Pets seen today” query runs every time the vet dashboard loads | Cache aggregates in a `DashboardSnapshot` table; refresh every 5 minutes via background job | ~100 dashboard loads/minute |
 
 ---
 
 ## Security Mistakes
 
-Domain-specific security issues beyond general web security.
+Domain‑specific security issues beyond general web security.
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Missing tenant isolation on vet medical records | Vet A sees Vet B's patient records | EF Core global query filters on TenantId; integration tests verify cross-tenant isolation |
-| Adoption application form accepts file uploads with no validation | Malware uploaded via "vet reference letter" field | Validate file types (PDF, images only); scan with antivirus; store outside web root; serve via separate endpoint with auth check |
-| Lost-pets module exposes reporter's phone/email publicly | Harassment, spam, doxxing of users reporting found pets | Use in-app messaging for contact; never expose personal contact info publicly; use temporary anonymous relay |
-| Admin dashboard accessible without IP restriction | Brute force against admin accounts; data exfiltration of all tenants | Admin routes under IP whitelist or VPN; rate-limit admin login attempts; audit all admin actions |
-| Pet medical records accessible without owner authorization | Medical data of Owner A's pet visible to Owner B | Enforce ownership check on every medical record endpoint: `pet.OwnerId == currentUser.Id` AND `pet.TenantId == currentTenant.Id` |
-| Payment card data logged in plain text | PCI DSS violation; card data in logs and error reports | Never log raw payment data; use Stripe Elements or similar to avoid touching card data entirely |
-| Anti-forgery token missing on AJAX forms in Razor Views | CSRF attacks on adoption forms, order submissions, profile updates | Add `@Html.AntiForgeryToken()` to all POST forms; validate with `[ValidateAntiForgeryToken]` attribute; configure jQuery AJAX to include the token header |
-| Soft-delete bypassed for GDPR right-to-erasure | User data persists after deletion request | Separate hard-delete operations for compliance (GDPR/CCPA erasure) that are explicit, logged, and audited. Normal application workflow uses soft-delete. |
+| Vet can see SOAP notes for pets they didn’t examine | Privacy violation; vet sees another vet’s clinical judgment | Enforce `CreatedByVetId` on SOAP notes; dashboard shows only notes created by the current vet (unless supervisor role) |
+| Prescription data accessible without pet ownership verification | Owner A sees Owner B’s pet’s prescriptions | Every medical record endpoint must verify: `pet.TenantId == currentTenant AND (pet.OwnerId == currentUser.Id OR currentUser.HasClaim("Vet"))` |
+| Reminder notifications contain sensitive medical info in email | Email is unencrypted; contains pet diagnosis and medication details | Email reminders contain only “You have a reminder for [PetName] — log in to view details.” Never include diagnosis or drug names in email body |
+| Treatment plan export accessible without authorization |任何人都 can export a pet’s full medical history | Export endpoint requires `Authorize` + resource‑based authorization (owner or treating vet) |
+| SOAP notes editable after signed/completed | Vet’s clinical notes are altered after the fact; legal liability | Mark SOAP notes as `Signed` (immutable) after the vet clicks “Complete.” Edits create a new version, not overwrite the old one |
+| Background reminder job runs with elevated privileges | Job can access all tenants; a bug in the job leaks data across tenants | Background jobs must restore tenant context from the Outbox message payload; never run with a blanket `Admin` claim |
+| Drug interaction check uses a third‑party API without caching | API downtime means no safety check; or API response is slow, blocking prescription save | Cache drug interaction data locally; sync nightly; block prescription only if local data flags a *known* dangerous interaction; warn (don’t block) for unknown interactions |
 
 ---
 
@@ -352,14 +330,14 @@ Common user experience mistakes in this domain.
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Pet search with no filters (breed, age, size, temperament, location) | Users scroll through hundreds of irrelevant listings | Implement faceted search with breed, age range, size, temperament, adoption status, distance filters |
-| Adoption form requires desktop browser | Mobile users (60-78% of traffic) abandon at the form | Mobile-first responsive design; accept multi-page form submissions across devices |
-| No "Pending" badge on active applications | Multiple adopters apply for the same pet; first applicant's effort wasted | Show application count ("3 applications pending") to signal demand; hold the pet for the first qualified applicant for 24h |
-| No "Last updated" timestamp on pet listings | Users fall in love with pets that were adopted weeks ago | Prominent "Last updated: 2 hours ago" on every listing; auto-expire or grey out listings > 7 days stale |
-| Vet dashboard shows all patients without search | Vets with 500+ patients scroll endlessly | Search by patient name, owner name, date of last visit; filter by species, status, upcoming appointments |
-| Lost-pet report requires creating an account | Urgent user (just lost their pet) abandons the form | Allow lost-pet reports with just name, phone, and email; no account required; create account as follow-up prompt |
-| Error messages in English on Arabic-first platform | Arabic users can't understand validation errors | Localize ALL user-facing strings to Arabic (project requirement: Arabic only for v1). Use .NET resources files |
-| Overnight processing of adoption applications | Adopter loses momentum between application and response | Target 2-3 day processing (shelter-side); send automated status updates at every stage; show expected timeline |
+| SOAP note form requires filling all four sections before saving | Vet abandons the note mid‑exam; data lost | Allow saving as draft at any point; auto‑save every 30 seconds; show “Draft” badge on incomplete notes |
+| Treatment plan is a separate page from the SOAP note | Vet has to navigate away from the patient’s record to create a plan; loses context | Treatment plan creation is a tab or section within the SOAP note view; the plan is created *from* the SOAP note, not separately |
+| Medication reminder acknowledgment is a single “OK” button | Vet has no insight into whether the owner actually gave the medication | Acknowledgment requires confirmation: “Did you give the medication? [Yes] [No — reschedule] [No — contact vet]” |
+| Vaccination reminder shows only the vaccine name | Owner doesn’t know why the vaccine is important or what happens if they skip it | Include a brief explanation: “Rabies vaccine is required by law. Overdue by 3 days. [Schedule now] [I already did — update record]” |
+| Vet dashboard is a single long scrollable page | Vets with 200+ patients scroll endlessly; no quick access to urgent cases | Dashboard has tabs: “My Patients” (paginated list), “Today’s Appointments” (time‑based), “Urgent” (overdue vaccinations, missed medications), “Recent Notes” (last 10 SOAP notes) |
+| Prescription form doesn’t show pet’s weight | Vet has to remember or look up the weight; dosage calculation is manual | Auto‑populate pet’s latest recorded weight at the top of the prescription form; highlight if weight is > 30 days old (“Weight may be outdated — recheck before prescribing”) |
+| Reminder preferences are buried in account settings | Owner never configures reminders; gets default (email only, 9 AM) | First‑time reminder setup wizard: “How do you want to be reminded? [Email] [SMS] [In‑app] [All]. When? [Morning] [Afternoon] [Evening]. Quiet hours? [10 PM – 7 AM]” |
+| Export button on vet dashboard exports *all* records for the clinic | Vet accidentally exports another vet’s patients; data leak | Export is per‑pet, not per‑clinic. The export button is on the pet detail page, not the dashboard. Confirmation dialog: “Export records for [PetName]? This will include all SOAP notes, prescriptions, and treatment plans.” |
 
 ---
 
@@ -367,16 +345,16 @@ Common user experience mistakes in this domain.
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Pet listing page:** Often missing "Last updated" timestamp, auto-expiry for adopted pets, and a clear "adoption pending" badge — verify all three exist per listing.
-- [ ] **Multi-tenant isolation:** Often missing on background jobs, cache keys, raw SQL reports, and admin dashboards — verify tenant context propagates through every data access path.
-- [ ] **Admin dashboard:** Often missing IP restriction, rate limiting, action audit trail, and tenant-scoped views — verify admin can only see their own tenant's data.
-- [ ] **Adoption application form:** Often missing CAPTCHA, CSRF protection, mobile-responsive layout, application status tracking (submitted → reviewed → interview → approved/denied), and save-as-draft — verify all six.
-- [ ] **Middleware pipeline:** Often missing correct ordering (exception handling first, CORS between routing and auth, static files before routing) — verify the exact order from Pitfall 4.
-- [ ] **EF Core query patterns:** Often missing `AsNoTracking()`, pagination, projection instead of `.Include()`, and composite indexes — verify all four on every list endpoint.
-- [ ] **Background jobs:** Often missing tenant context, idempotency, exponential backoff, dead-letter queue, and monitoring — verify all five on every background job path.
-- [ ] **Error handling:** Often missing localized error messages (Arabic), user-friendly error pages instead of yellow screens, and structured error logging with TenantId — verify all three.
-- [ ] **Payment flow:** Often missing idempotency keys, Stripe webhook idempotency, refund path in admin dashboard, and transaction records that survive webhook delivery failures — verify all four.
-- [ ] **Pet medical records:** Often missing ownership-scoped access (not just tenant-scoped), audit log of who viewed records, and export capability for owners — verify all three.
+- [ ] **SOAP notes:** Often missing structured vitals (weight, temp, HR), diagnosis coding, and draft/auto‑save — verify all three exist per SOAP note.
+- [ ] **Treatment plans:** Often missing link to originating SOAP note, linked prescriptions, status (Active/Completed), and audit trail (who created, when) — verify all four.
+- [ ] **Prescriptions:** Often missing server‑side dosage calculation, weight snapshot, drug interaction check, immutability after dispensing, and refill tracking — verify all five.
+- [ ] **Vaccination reminders:** Often missing per‑species/breed protocol, configurable schedule, multi‑channel delivery, and acknowledgment tracking — verify all four.
+- [ ] **Medication reminders:** Often missing “with food” scheduling, preferred times, adherence tracking, and snooze/reschedule option — verify all four.
+- [ ] **Vet dashboard:** Often missing vet‑level patient filtering, urgent‑case highlighting, pagination, and `AsNoTracking()` — verify all four.
+- [ ] **Reminder system:** Often missing Outbox pattern, dead‑letter queue, delivery status tracking, and notification digest — verify all four.
+- [ ] **Medical record export:** Often missing FHIR‑compatible format, audit fields (CreatedBy, CreatedDate), and tenant‑scoped access — verify all three.
+- [ ] **Notification preferences:** Often missing quiet hours, channel selection, priority levels, and digest configuration — verify all four.
+- [ ] **Prescription refill:** Often missing dispensing date, expected end date, lead‑time configuration, and owner refill confirmation — verify all four.
 
 ---
 
@@ -386,50 +364,49 @@ When pitfalls occur despite prevention, how to recover.
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Cross-tenant data leak discovered in production | HIGH — legal liability, PR crisis, potential loss of tenants | 1. Isolate the affected tenant(s) by blocking access. 2. Determine scope of leaked data (audit logs + DbContext query log replay). 3. Notify affected tenants per contractual/compliance obligations. 4. Deploy fix (add missing tenant filter). 5. Add integration test proving cross-tenant isolation. 6. Schedule penetration test. |
-| Clean Architecture over-engineering slowing all features | MEDIUM — refactoring cost, no runtime risk | 1. Identify which abstractions have exactly one implementation and never change. 2. Delete the interface, inline the implementation. 3. Remove MediatR if handlers are thin wrappers around services. 4. Remove AutoMapper, replace with manual mapping. 5. Consolidate projects if Layer boundaries don't provide value. |
-| Petfinder API down, platform shows no pets | HIGH — core feature non-functional, users leave | 1. Serve stale cached data with "Last updated" banner. 2. Add local pet database if one doesn't exist. 3. Implement a background sync worker. 4. Fall back to shelter-provided Petfinder widget if local data is also stale. |
-| N+1 queries causing DB CPU at 100% | HIGH — production incident | 1. Kill the offending queries (restart app if needed). 2. Add missing `.Include()` or projection. 3. Add `AsNoTracking()`. 4. Add a query-count interceptor to prevent recurrence. |
-| Stale pet listing: user drives to shelter, pet is gone | LOW/MEDIUM — reputational damage, user frustration | 1. Add prominent "last updated" timestamp. 2. Auto-expire listings after configurable days. 3. Send shelter a weekly email: "You have X listings not updated in 7+ days." 4. Add "Confirm still available" button to shelter dashboard. |
-| Background job sends duplicate adoption confirmation | MEDIUM — user confusion, potential reputational damage | 1. Add idempotency key tracking (processed_events table). 2. Add dedup check before sending. 3. Monitor duplicate events to find root cause (outbox replay? queue redelivery?). |
+| SOAP notes stored as unstructured text for 6 months | HIGH — data migration, possible data loss | 1. Write a migration script to parse existing free‑text SOAP notes (regex for vitals, diagnosis keywords). 2. Create structured entities. 3. Backfill from parsed data (accept that some data will be imperfect). 4. Deploy new form; keep old form as read‑only archive. |
+| Dosage calculations done only in JS, lethal typo in production | CRITICAL — patient safety incident | 1. Immediately add server‑side dosage validation. 2. Audit all existing prescriptions for dosage anomalies (> 10× normal range). 3. Notify affected vets. 4. Add drug interaction checker. |
+| Reminder cron job fails silently for 2 weeks | HIGH — missed vaccinations, owner trust damage | 1. Add monitoring/alerting on the background job (email admin on failure). 2. Implement dead‑letter queue. 3. Send a catch‑up batch of overdue reminders with “Sorry for the delay” messaging. |
+| Vet can see other vet’s patients (no intra‑tenant filter) | MEDIUM — privacy violation, trust damage | 1. Add `PrimaryVetId` to Pet entity (migration). 2. Backfill from `CreatedBy` on medical records. 3. Add vet‑level filter to dashboard query. 4. Add integration test. |
+| Vaccination schedule hardcoded, sends wrong reminders | MEDIUM — clinical risk, vet frustration | 1. Create `VaccinationProtocol` entity. 2. Seed with AAHA/AAFP guidelines. 3. Migrate existing reminders to use protocol. 4. Add vet override capability. |
+| Treatment plans stored as PDF blobs | HIGH — data silo, no search, no audit | 1. Create `TreatmentPlan` entity with relationships. 2. Write a parser to extract text from existing PDFs (if possible). 3. Backfill entity from parsed data. 4. Deprecate PDF upload. |
 
 ---
 
-## Pitfall-to-Phase Mapping
+## Pitfall‑to‑Phase Mapping
 
 How roadmap phases should address these pitfalls.
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Clean Architecture over-engineering | Phase 0 (foundation) | Code review: no MediatR, no generic repositories, no AutoMapper in the project template |
-| Anaemic domain model | Phase 0 (domain layer) | Domain entities have private setters and business methods; controllers < 60 lines |
-| Cross-tenant data leakage | Phase 0 (infrastructure) | Integration tests with 3+ simulated tenants prove no data leaks |
-| Middleware ordering breaks auth | Phase 0 (Program.cs) | Automated middleware order test; manual review against canonical order |
-| Third-party API single point of failure | Phase 3 (adoption module) | Local DB as source of truth; Petfinder sync is background-only |
-| N+1 queries and EF Core performance | Phase 0 (data access patterns) | Every list endpoint has pagination + AsNoTracking + projection |
-| Building for adopters without shelters | Phase 1 (discovery) + Phase 3 | User research includes shelter staff interviews; shelter dashboard ships alongside adopter features |
-| Over-expansion / unit economics | Phase 1 (roadmap/RFP) | ROADMAP limits Phase 2 to ONE feature vertical; business case shows path to breakeven |
-| Stale pet listings | Phase 3 (adoption module) | Auto-expiry feature exists; "last updated" on all listings; shelter dashboard shows stale listings |
-| Anti-forgery token missing on AJAX | Phase 0 (Razor layout) | Every POST form has anti-forgery token; automated test verifies CSRF protection |
-| No pagination on list endpoints | Phase 0 (repository layer) | Every `GetAll` / list method has mandatory `.Take()` / `.Skip()` parameters |
-| Missing TenantId on cache keys | Phase 0 (caching layer) | Cache abstraction automatically prefixes keys with tenant ID |
-| Background jobs without tenant context | Phase 2+ (background workers) | Every job payload includes TenantId; handler restores tenant context before DB access |
+| SOAP notes as unstructured text | Phase 0 (domain model) | `SoapNote` entity has structured vitals, diagnosis, and draft support |
+| Treatment plans as static documents | Phase 1 (treatment plan entity) | `TreatmentPlan` links to `SoapNote`, `Pet`, and `Prescription` |
+| Dosage calculations in UI only | Phase 1 (prescription entity) | Server‑side dosage validation with weight snapshot |
+| Reminder as cron email only | Phase 2 (reminder infrastructure) | Outbox pattern, multi‑channel, status tracking |
+| Hardcoded vaccination schedule | Phase 1 (vaccination protocol) | `VaccinationProtocol` entity with per‑species/breed data |
+| Medication reminder ignores feeding schedule | Phase 2 (reminder UX) | `MedicationSchedule` entity with `PreferredTimes` and `WithFood` |
+| Vet dashboard shows all patients | Phase 0 (vet dashboard) | Integration test: Vet A cannot see Vet B’s patients |
+| Reminder overload / notification fatigue | Phase 2 (reminder UX) | Notification digest option, priority levels, quiet hours |
+| Prescription refill tracking gaps | Phase 1 (prescription entity) | `DispensedDate`, `ExpectedEndDate`, lead‑time config |
+| Medical record export as afterthought | Phase 1 (medical record design) | FHIR export endpoint, audit fields on all clinical entities |
+| Prescription editable after dispensing | Phase 1 (prescription entity) | Immutability enforcement on `Dispensed` status |
+| Background job without tenant context | Phase 2 (reminder infra) | Integration test: reminder job respects tenant boundaries |
+| SOAP notes editable after signing | Phase 0 (domain model) | `Signed` status prevents edits; versioning on update |
+| Export requires no authorization | Phase 1 (export feature) | Resource‑based authorization on export endpoint |
 
 ---
 
 ## Sources
 
-- **Pet platform startup post-mortems:** Fuzzy ($80.5M shutdown, midnight-comm.com), Vetster ($63M raised → 60% valuation haircut, unicornburn.com), BarkBox ($1.6B→$1.20/share, unicornburn.com), PetBacker (shutdown after pandemic revenue collapse, unicornburn.com), The Vets (shutdown with ongoing billing to customers, VIN News), Zumvet (shutdown with no notice, ongoing subscription charges, Maxthon blog), Wiggles (overexpansion, runway 2 months, The Real Preneur)
-- **Clean Architecture anti-patterns:** PrepStack, Code With Vane (Medium), Stackademic, codewithmukesh.com — eight common mistakes including anemic domain, over-mapping, wrong-layer repositories
-- **ASP.NET Core middleware ordering:** ByteCrate.dev — canonical middleware order with pitfalls documented
-- **EF Core pitfalls:** C# Corner — AsNoTracking, N+1, Include chains, DbContext lifetime
-- **Multi-tenant isolation:** Agnite Studio — cross-tenant data leak guide, tenant isolation checklist; .NET Guide — EF Core global query filters, bypass patterns
-- **Pet adoption marketplace failures:** LOW/CODE blog — "built for adopters without building for shelters first"; Social Animal — 200 shelter website audit (42.5% stale listings, 340% higher adoption inquiry with real-time sync); WeRescue — adoption gap as data infrastructure problem
-- **1M user .NET scaling post-mortem:** Kerim Kara (Medium — Real World .NET) — pagination, caching, background jobs, external dependencies
-- **Scalability / performance:** UnicornBurn startup autopsy methodology
-- **VetCare (pet health multi-tenant reference):** paulo-raoni/vetcare on GitHub — multi-tenancy via EF Core global query filters, ADR-003
+- **AVMA Medical Records Guidelines:** avma.org — veterinary medical record standards, SOAP note structure
+- **AAHA Canine Vaccination Protocol:** aaha.org — core vaccine schedules, booster intervals
+- **AAFP Feline Vaccination Protocol:** aafp.org — feline‑specific vaccine guidelines
+- **FHIR R4 Specification:** hl7.org/fhir — healthcare data exchange standard
+- **ASP.NET Core Security Documentation:** learn.microsoft.com — authorization handlers, resource‑based auth, data protection
+- **Veterinary Software Post‑mortems:** VIN News, DVM360 — common EHR implementation failures in vet clinics
+- **Notification Fatigue Research:** Nielsen Norman Group — digest vs. real‑time notification UX patterns
+- **Drug Interaction Checking in Vet Medicine:** Veterinary Information Network — common drug pairs, interaction severity
 
 ---
-
-*Pitfalls research for: Pet Platform Web Application*
-*Researched: 2026-07-18*
+*Pitfalls research for: Vet Dashboard & Reminders — ASP.NET Core MVC Pet Platform*
+*Researched: 2026-07‑21*

@@ -37,11 +37,7 @@ public class AssignmentController : Controller
         var userId = _userManager.GetUserId(User);
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
-        // Get all assignments for this vet and find the one matching the id
-        var pendingRequests = await _vetService.GetPendingRequestsAsync(userId);
-        var acceptedAssignments = await _vetService.GetAcceptedAssignmentsAsync(userId);
-        var allAssignments = pendingRequests.Concat(acceptedAssignments);
-        var assignment = allAssignments.FirstOrDefault(a => a.Id == id);
+        var assignment = await _vetService.GetAssignmentByIdAsync(id, userId);
 
         if (assignment == null)
         {

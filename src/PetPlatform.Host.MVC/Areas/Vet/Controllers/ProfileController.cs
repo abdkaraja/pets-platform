@@ -92,11 +92,6 @@ public class ProfileController : Controller
             return RedirectToAction(nameof(Create));
         }
 
-        if (profile.UserId != userId)
-        {
-            return NotFound();
-        }
-
         var dto = new UpdateVetProfileDto
         {
             FullName = profile.FullName,

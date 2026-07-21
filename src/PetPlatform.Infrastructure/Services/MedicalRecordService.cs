@@ -90,12 +90,13 @@ public class MedicalRecordService : IMedicalRecordService
             .OrderByDescending(vr => vr.DateAdministered)
             .ToListAsync();
 
-        var dtos = new List<VaccinationRecordDto>();
-        foreach (var record in records)
-        {
-            dtos.Add(await MapToVaccinationDtoAsync(record));
-        }
-        return dtos;
+        // Batch-load vet profiles to avoid N+1 queries
+        var vetUserIds = records.Select(r => r.VetUserId).Distinct().ToList();
+        var vetProfiles = await _context.VetProfiles
+            .Where(vp => vetUserIds.Contains(vp.UserId))
+            .ToDictionaryAsync(vp => vp.UserId, vp => vp.FullName);
+
+        return records.Select(r => MapToVaccinationDto(r, vetProfiles.GetValueOrDefault(r.VetUserId, string.Empty))).ToList();
     }
 
     // ── Medication ───────────────────────────────────────────────────
@@ -150,12 +151,13 @@ public class MedicalRecordService : IMedicalRecordService
             .OrderByDescending(mr => mr.StartDate)
             .ToListAsync();
 
-        var dtos = new List<MedicationRecordDto>();
-        foreach (var record in records)
-        {
-            dtos.Add(await MapToMedicationDtoAsync(record));
-        }
-        return dtos;
+        // Batch-load vet profiles to avoid N+1 queries
+        var vetUserIds = records.Select(r => r.VetUserId).Distinct().ToList();
+        var vetProfiles = await _context.VetProfiles
+            .Where(vp => vetUserIds.Contains(vp.UserId))
+            .ToDictionaryAsync(vp => vp.UserId, vp => vp.FullName);
+
+        return records.Select(r => MapToMedicationDto(r, vetProfiles.GetValueOrDefault(r.VetUserId, string.Empty))).ToList();
     }
 
     // ── Visit Notes ──────────────────────────────────────────────────
@@ -210,12 +212,13 @@ public class MedicalRecordService : IMedicalRecordService
             .OrderByDescending(vn => vn.VisitDate)
             .ToListAsync();
 
-        var dtos = new List<VetVisitNoteDto>();
-        foreach (var record in records)
-        {
-            dtos.Add(await MapToVisitNoteDtoAsync(record));
-        }
-        return dtos;
+        // Batch-load vet profiles to avoid N+1 queries
+        var vetUserIds = records.Select(r => r.VetUserId).Distinct().ToList();
+        var vetProfiles = await _context.VetProfiles
+            .Where(vp => vetUserIds.Contains(vp.UserId))
+            .ToDictionaryAsync(vp => vp.UserId, vp => vp.FullName);
+
+        return records.Select(r => MapToVisitNoteDto(r, vetProfiles.GetValueOrDefault(r.VetUserId, string.Empty))).ToList();
     }
 
     // ── Unified Timeline (D-12) ──────────────────────────────────────
@@ -382,6 +385,69 @@ public class MedicalRecordService : IMedicalRecordService
             UpdatedAt = vn.UpdatedAt,
             PetName = vn.Pet?.Name ?? string.Empty,
             VetUserName = vetProfile?.FullName ?? string.Empty
+        };
+    }
+
+    // ── Synchronous Mappers (for batch-loaded data) ───────────────────
+
+    private static VaccinationRecordDto MapToVaccinationDto(VaccinationRecord vr, string vetFullName)
+    {
+        return new VaccinationRecordDto
+        {
+            Id = vr.Id,
+            PetId = vr.PetId,
+            VetUserId = vr.VetUserId,
+            VaccineName = vr.VaccineName,
+            DateAdministered = vr.DateAdministered,
+            BatchLotNumber = vr.BatchLotNumber,
+            NextDueDate = vr.NextDueDate,
+            Notes = vr.Notes,
+            CreatedAt = vr.CreatedAt,
+            UpdatedAt = vr.UpdatedAt,
+            PetName = vr.Pet?.Name ?? string.Empty,
+            VetUserName = vetFullName
+        };
+    }
+
+    private static MedicationRecordDto MapToMedicationDto(MedicationRecord mr, string vetFullName)
+    {
+        return new MedicationRecordDto
+        {
+            Id = mr.Id,
+            PetId = mr.PetId,
+            VetUserId = mr.VetUserId,
+            MedicationName = mr.MedicationName,
+            Dosage = mr.Dosage,
+            Frequency = mr.Frequency,
+            StartDate = mr.StartDate,
+            EndDate = mr.EndDate,
+            PrescribingReason = mr.PrescribingReason,
+            Instructions = mr.Instructions,
+            SideEffectsNoted = mr.SideEffectsNoted,
+            CreatedAt = mr.CreatedAt,
+            UpdatedAt = mr.UpdatedAt,
+            PetName = mr.Pet?.Name ?? string.Empty,
+            VetUserName = vetFullName
+        };
+    }
+
+    private static VetVisitNoteDto MapToVisitNoteDto(VetVisitNote vn, string vetFullName)
+    {
+        return new VetVisitNoteDto
+        {
+            Id = vn.Id,
+            PetId = vn.PetId,
+            VetUserId = vn.VetUserId,
+            VisitDate = vn.VisitDate,
+            Subjective = vn.Subjective,
+            Objective = vn.Objective,
+            Assessment = vn.Assessment,
+            Plan = vn.Plan,
+            Notes = vn.Notes,
+            CreatedAt = vn.CreatedAt,
+            UpdatedAt = vn.UpdatedAt,
+            PetName = vn.Pet?.Name ?? string.Empty,
+            VetUserName = vetFullName
         };
     }
 }

@@ -99,14 +99,19 @@ public class VetAssignmentController : Controller
         var result = await _vetService.RequestAssignmentAsync(petId, vetProfileId, userId);
         if (result.IsSuccess && result.Value != null)
         {
-            // Auto-accept since admin is creating directly
-            var acceptResult = await _vetService.AcceptAssignmentAsync(result.Value.Id, userId);
-            if (acceptResult.IsSuccess)
+            // Auto-accept since admin is creating directly.
+            // Look up the vet's UserId so AcceptAssignmentAsync ownership check passes.
+            var vetProfile = await _context.VetProfiles.FindAsync(vetProfileId);
+            if (vetProfile != null)
             {
-                TempData["Success"] = "Vet assignment created successfully.";
-                return RedirectToAction(nameof(Index));
+                var acceptResult = await _vetService.AcceptAssignmentAsync(result.Value.Id, vetProfile.UserId);
+                if (acceptResult.IsSuccess)
+                {
+                    TempData["Success"] = "Vet assignment created successfully.";
+                    return RedirectToAction(nameof(Index));
+                }
             }
-            TempData["Error"] = acceptResult.Error ?? "Assignment created but could not be auto-accepted.";
+            TempData["Error"] = "Assignment created but could not be auto-accepted.";
             return RedirectToAction(nameof(Index));
         }
 

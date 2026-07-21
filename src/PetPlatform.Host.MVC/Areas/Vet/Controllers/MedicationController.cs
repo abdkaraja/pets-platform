@@ -80,6 +80,12 @@ public class MedicationController : Controller
         var record = await _medicalRecordService.GetMedicationByIdAsync(id);
         if (record == null) return NotFound();
 
+        var userId = _userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
+        var assignment = await _vetService.GetActiveAssignmentAsync(record.PetId, userId);
+        if (assignment == null) return Forbid();
+
         ViewData["Title"] = $"Medication — {record.MedicationName}";
         return View(record);
     }

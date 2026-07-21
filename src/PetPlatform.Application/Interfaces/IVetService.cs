@@ -20,6 +20,7 @@ public interface IVetService
     Task<IEnumerable<VetAssignmentDto>> GetPendingRequestsAsync(string vetUserId);
     Task<IEnumerable<VetAssignmentDto>> GetAcceptedAssignmentsAsync(string vetUserId);
     Task<VetAssignmentDto?> GetActiveAssignmentAsync(int petId, string vetUserId);
+    Task<VetAssignmentDto?> GetAssignmentByIdAsync(int assignmentId, string vetUserId);
     Task<IEnumerable<VetAssignmentDto>> GetAssignmentsForPetAsync(int petId);
 
     // Admin (D-13, D-14)
