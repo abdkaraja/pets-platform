@@ -1,0 +1,31 @@
+@model IEnumerable<PetPlatform.Application.DTOs.MedicalRecordSummaryDto>
+
+<div class="mt-8">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Medical Records</h2>
+        @if (Model.Any())
+        {
+            <a asp-area="Customer" asp-controller="MedicalHistory" asp-action="Index"
+               asp-route-petId="@Model.First().PetId"
+               class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                View Full History &rarr;
+            </a>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <p class="text-gray-500">No medical records yet</p>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-3">
+            @foreach (var record in Model)
+            {
+                @await Html.PartialAsync("/Areas/Customer/Views/MedicalHistory/_MedicalRecordRow.cshtml", record)
+            }
+        </div>
+    }
+</div>

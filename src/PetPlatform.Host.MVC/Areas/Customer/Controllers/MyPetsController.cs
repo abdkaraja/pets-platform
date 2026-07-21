@@ -13,15 +13,18 @@ public class MyPetsController : Controller
 {
     private readonly IPetService _petService;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IMedicalRecordService _medicalRecordService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public MyPetsController(
         IPetService petService,
         IFileStorageService fileStorageService,
+        IMedicalRecordService medicalRecordService,
         UserManager<ApplicationUser> userManager)
     {
         _petService = petService;
         _fileStorageService = fileStorageService;
+        _medicalRecordService = medicalRecordService;
         _userManager = userManager;
     }
 
@@ -73,6 +76,11 @@ public class MyPetsController : Controller
     {
         var pet = await _petService.GetByIdAsync(id);
         if (pet is null) return NotFound();
+
+        // Fetch recent medical records (last 5) for the summary section
+        var recentRecords = await _medicalRecordService.GetRecentRecordsAsync(id, 5);
+        ViewBag.RecentRecords = recentRecords;
+
         return View(pet);
     }
 

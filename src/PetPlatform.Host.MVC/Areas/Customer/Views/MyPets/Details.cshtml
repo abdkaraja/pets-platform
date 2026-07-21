@@ -1,6 +1,7 @@
 @model PetPlatform.Application.DTOs.PetDto
 @{
     ViewData["Title"] = Model.Name;
+    var recentRecords = ViewBag.RecentRecords as IEnumerable<PetPlatform.Application.DTOs.MedicalRecordSummaryDto> ?? Enumerable.Empty<PetPlatform.Application.DTOs.MedicalRecordSummaryDto>();
 }
 
 <h1 class="text-2xl font-bold mb-6">@Model.Name</h1>
@@ -46,3 +47,6 @@
         </a>
     </div>
 </div>
+
+<!-- Medical Records Summary -->
+@await Html.PartialAsync("_MedicalRecordsSummary", recentRecords)
