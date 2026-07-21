@@ -1,0 +1,148 @@
+@model PetPlatform.Application.DTOs.VetProfileDto
+@{
+    ViewData["Title"] = Model.FullName;
+
+    var availability = ViewBag.Availability as IEnumerable<PetPlatform.Domain.Entities.VetAvailability> ?? Enumerable.Empty<PetPlatform.Domain.Entities.VetAvailability>();
+    var userPets = ViewBag.UserPets as IEnumerable<PetPlatform.Domain.Entities.Pet> ?? Enumerable.Empty<PetPlatform.Domain.Entities.Pet>();
+}
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a asp-action="Index" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Back to Vet Discovery</a>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- Vet Profile Card -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold text-gray-800">@Model.FullName</h1>
+            @if (Model.IsAvailable)
+            {
+                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Accepting Patients</span>
+            }
+            else
+            {
+                <span class="inline-block px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">Currently not accepting patients</span>
+            }
+        </div>
+
+        <div class="space-y-3 mb-6">
+            @if (!string.IsNullOrEmpty(Model.Clinic))
+            {
+                <div>
+                    <span class="font-semibold text-gray-600">Clinic:</span>
+                    <span class="ml-2">@Model.Clinic</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Specialty))
+            {
+                <div>
+                    <span class="font-semibold text-gray-600">Specialty:</span>
+                    <span class="ml-2">@Model.Specialty</span>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Bio))
+            {
+                <div>
+                    <span class="font-semibold text-gray-600">About:</span>
+                    <p class="ml-2 text-gray-700 mt-1">@Model.Bio</p>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ServicesOffered))
+            {
+                <div>
+                    <span class="font-semibold text-gray-600">Services Offered:</span>
+                    <span class="ml-2">@Model.ServicesOffered</span>
+                </div>
+            }
+        </div>
+
+        <!-- Availability Schedule -->
+        @if (availability.Any())
+        {
+            <div class="mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">Availability Schedule</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-200 rounded">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-gray-600">Day</th>
+                                <th class="px-4 py-2 text-left text-gray-600">Hours</th>
+                                <th class="px-4 py-2 text-left text-gray-600">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var slot in availability)
+                            {
+                                <tr class="border-t border-gray-200">
+                                    <td class="px-4 py-2 font-medium">@slot.DayOfWeek</td>
+                                    <td class="px-4 py-2">
+                                        @if (slot.IsAvailable)
+                                        {
+                                            @($"{slot.StartTime:HH:mm} - {slot.EndTime:HH:mm}")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400">—</span>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        @if (slot.IsAvailable)
+                                        {
+                                            <span class="text-green-600">Available</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400">Unavailable</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- Request Assignment -->
+        @if (Model.IsAvailable)
+        {
+            <div class="border-t pt-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">Request Assignment</h2>
+                @if (!userPets.Any())
+                {
+                    <p class="text-gray-500">You don't have any pets registered yet. <a asp-area="Customer" asp-controller="MyPets" asp-action="Create" class="text-blue-600 hover:text-blue-800">Add a pet</a> first.</p>
+                }
+                else
+                {
+                    <form asp-action="RequestAssignment" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="VetProfileId" value="@Model.Id" />
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Select Pet</label>
+                            <select name="PetId" required class="w-full border border-gray-300 rounded px-3 py-2">
+                                <option value="">— Choose a pet —</option>
+                                @foreach (var pet in userPets)
+                                {
+                                    <option value="@pet.Id">@pet.Name (@pet.Species)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                            Send Assignment Request
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>
