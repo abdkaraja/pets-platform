@@ -63,6 +63,8 @@ builder.Services.AddScoped<IAdoptionService, AdoptionService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILostPetService, LostPetService>();
+builder.Services.AddScoped<IVetService, VetService>();
+builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 builder.Services.AddScoped<IApplicationDbContext>(sp =>
     sp.GetRequiredService<ApplicationDbContext>());
 
