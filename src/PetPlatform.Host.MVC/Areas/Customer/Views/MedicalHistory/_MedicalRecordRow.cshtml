@@ -1,0 +1,41 @@
+@model PetPlatform.Application.DTOs.MedicalRecordSummaryDto
+@{
+    string badgeClass = Model.RecordType switch
+    {
+        PetPlatform.Domain.Enums.MedicalRecordType.Vaccination => "bg-green-100 text-green-800",
+        PetPlatform.Domain.Enums.MedicalRecordType.Medication => "bg-blue-100 text-blue-800",
+        PetPlatform.Domain.Enums.MedicalRecordType.VisitNote => "bg-purple-100 text-purple-800",
+        _ => "bg-gray-100 text-gray-800"
+    };
+
+    string typeName = Model.RecordType switch
+    {
+        PetPlatform.Domain.Enums.MedicalRecordType.Vaccination => "Vaccination",
+        PetPlatform.Domain.Enums.MedicalRecordType.Medication => "Medication",
+        PetPlatform.Domain.Enums.MedicalRecordType.VisitNote => "Visit Note",
+        _ => "Record"
+    };
+
+    string dataFilter = Model.RecordType switch
+    {
+        PetPlatform.Domain.Enums.MedicalRecordType.Vaccination => "vaccination",
+        PetPlatform.Domain.Enums.MedicalRecordType.Medication => "medication",
+        PetPlatform.Domain.Enums.MedicalRecordType.VisitNote => "visitnote",
+        _ => "other"
+    };
+}
+
+<div class="medical-record bg-white rounded-lg shadow p-4 flex items-start gap-4" data-type="@dataFilter">
+    <div class="flex-shrink-0 pt-1">
+        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold @badgeClass">
+            @typeName
+        </span>
+    </div>
+    <div class="flex-1">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-sm text-gray-500">@Model.Date.ToString("MMM dd, yyyy")</span>
+            <span class="text-sm text-gray-400">by @Model.VetUserName</span>
+        </div>
+        <p class="text-gray-800">@Model.Summary</p>
+    </div>
+</div>

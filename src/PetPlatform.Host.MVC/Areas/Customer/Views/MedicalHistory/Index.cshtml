@@ -1,0 +1,86 @@
+@model IEnumerable<PetPlatform.Application.DTOs.MedicalRecordSummaryDto>
+@{
+    ViewData["Title"] = $"Medical History — {ViewData["PetName"]}";
+}
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a asp-area="Customer" asp-controller="MyPets" asp-action="Details" asp-route-id="@Model.FirstOrDefault()?.PetId"
+           class="text-blue-600 hover:text-blue-800 text-sm">
+            &larr; Back to Pet Details
+        </a>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-4">Medical History — @ViewData["PetName"]</h1>
+
+    <!-- Filter Tabs -->
+    <div class="flex gap-2 mb-6">
+        <button class="filter-tab active px-4 py-2 rounded-full text-sm font-medium bg-blue-600 text-white"
+                data-filter="all">
+            All
+        </button>
+        <button class="filter-tab px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
+                data-filter="vaccination">
+            Vaccinations
+        </button>
+        <button class="filter-tab px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
+                data-filter="medication">
+            Medications
+        </button>
+        <button class="filter-tab px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
+                data-filter="visitnote">
+            Visit Notes
+        </button>
+    </div>
+
+    <!-- Timeline -->
+    @if (!Model.Any())
+    {
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+            <p class="text-gray-500 text-lg mb-4">No medical records yet</p>
+            <a asp-area="Customer" asp-controller="VetDiscovery" asp-action="Index"
+               class="text-blue-600 hover:text-blue-800 font-medium">
+                Find a Veterinarian &rarr;
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-4">
+            @foreach (var record in Model)
+            {
+                @await Html.PartialAsync("_MedicalRecordRow", record)
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.filter-tab').on('click', function () {
+                var filter = $(this).data('filter');
+
+                // Update active tab styling
+                $('.filter-tab').removeClass('active bg-blue-600 text-white')
+                    .addClass('bg-gray-200 text-gray-700');
+                $(this).removeClass('bg-gray-200 text-gray-700')
+                    .addClass('active bg-blue-600 text-white');
+
+                // Show/hide records
+                if (filter === 'all') {
+                    $('.medical-record').show();
+                } else {
+                    $('.medical-record').each(function () {
+                        var type = $(this).data('type');
+                        if (type === filter) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
