@@ -34,5 +34,13 @@ public interface IApplicationDbContext
     DbSet<LostPetReportPhoto> LostPetReportPhotos { get; }
     DbSet<MatchNotification> MatchNotifications { get; }
 
+    // Medical Records & Vet Management entities
+    DbSet<VetProfile> VetProfiles { get; }
+    DbSet<VetAvailability> VetAvailability { get; }
+    DbSet<VetAssignment> VetAssignments { get; }
+    DbSet<VaccinationRecord> VaccinationRecords { get; }
+    DbSet<MedicationRecord> MedicationRecords { get; }
+    DbSet<VetVisitNote> VetVisitNotes { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

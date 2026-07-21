@@ -36,6 +36,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<LostPetReportPhoto> LostPetReportPhotos => Set<LostPetReportPhoto>();
     public DbSet<MatchNotification> MatchNotifications => Set<MatchNotification>();
 
+    // Medical Records & Vet Management entities
+    public DbSet<VetProfile> VetProfiles => Set<VetProfile>();
+    public DbSet<VetAvailability> VetAvailability => Set<VetAvailability>();
+    public DbSet<VetAssignment> VetAssignments => Set<VetAssignment>();
+    public DbSet<VaccinationRecord> VaccinationRecords => Set<VaccinationRecord>();
+    public DbSet<MedicationRecord> MedicationRecords => Set<MedicationRecord>();
+    public DbSet<VetVisitNote> VetVisitNotes => Set<VetVisitNote>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder); // MUST call first for Identity tables
