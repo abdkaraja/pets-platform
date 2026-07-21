@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Create Vet Assignment";
+    var pets = ViewBag.Pets as IEnumerable<PetPlatform.Domain.Entities.Pet> ?? Enumerable.Empty<PetPlatform.Domain.Entities.Pet>();
+    var vetProfiles = ViewBag.VetProfiles as IEnumerable<PetPlatform.Domain.Entities.VetProfile> ?? Enumerable.Empty<PetPlatform.Domain.Entities.VetProfile>();
+}
+
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a asp-action="Index" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Back to Assignments</a>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-6">Create Vet Assignment</h1>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            @TempData["Error"]
+        </div>
+    }
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Select Pet</label>
+                    <select name="petId" required class="w-full border border-gray-300 rounded px-3 py-2">
+                        <option value="">— Choose a pet —</option>
+                        @foreach (var pet in pets)
+                        {
+                            <option value="@pet.Id">@pet.Name (@pet.Species)</option>
+                        }
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Select Veterinarian</label>
+                    <select name="vetProfileId" required class="w-full border border-gray-300 rounded px-3 py-2">
+                        <option value="">— Choose a vet —</option>
+                        @foreach (var vet in vetProfiles)
+                        {
+                            <option value="@vet.Id">@vet.FullName @(vet.Clinic != null ? $"({vet.Clinic})" : "")</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                    Create Assignment
+                </button>
+                <a asp-action="Index" class="text-gray-600 hover:text-gray-800 py-2 px-4">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
