@@ -8,16 +8,16 @@ public class CatalogController : Controller
 {
     private readonly IProductService _productService;
     private readonly ICategoryService _categoryService;
-    private readonly IApplicationDbContext _context;
+    private readonly IBrandService _brandService;
 
     public CatalogController(
         IProductService productService,
         ICategoryService categoryService,
-        IApplicationDbContext context)
+        IBrandService brandService)
     {
         _productService = productService;
         _categoryService = categoryService;
-        _context = context;
+        _brandService = brandService;
     }
 
     public async Task<IActionResult> Index(
@@ -45,12 +45,7 @@ public class CatalogController : Controller
 
         var result = await _productService.GetFilteredProductsAsync(filter);
         var categories = await _categoryService.GetAllAsync();
-        var brands = _context.Brands.Select(b => new BrandDto
-        {
-            Id = b.Id,
-            Name = b.Name,
-            ProductCount = b.Products.Count(p => p.IsActive)
-        }).ToList();
+        var brands = await _brandService.GetBrandsWithProductCountsAsync();
 
         ViewBag.Categories = categories;
         ViewBag.Brands = brands;

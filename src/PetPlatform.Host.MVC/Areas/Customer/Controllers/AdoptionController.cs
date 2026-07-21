@@ -72,8 +72,7 @@ public class AdoptionController : Controller
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
-        var applications = await _adoptionService.GetMyApplicationsAsync(userId);
-        var application = applications.FirstOrDefault(a => a.Id == id);
+        var application = await _adoptionService.GetApplicationByIdAsync(id, userId);
         if (application is null) return NotFound();
 
         return View(application);

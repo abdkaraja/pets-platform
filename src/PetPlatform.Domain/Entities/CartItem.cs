@@ -18,6 +18,11 @@ public class CartItem
 
     public static CartItem Create(int cartId, int productVariantId, int quantity, decimal lockedPrice)
     {
+        Guard.Against.Zero(cartId, nameof(cartId));
+        Guard.Against.Zero(productVariantId, nameof(productVariantId));
+        Guard.Against.NegativeOrZero(quantity, nameof(quantity));
+        Guard.Against.Negative(lockedPrice, nameof(lockedPrice));
+
         return new CartItem
         {
             CartId = cartId,

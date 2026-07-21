@@ -32,6 +32,6 @@ public class AdoptionApplicationConfiguration : IEntityTypeConfiguration<Adoptio
 
         builder.HasIndex(aa => aa.ListingId);
         builder.HasIndex(aa => aa.ApplicantUserId);
-        builder.HasIndex(aa => new { aa.ListingId, aa.ApplicantUserId });
+        builder.HasIndex(aa => new { aa.ListingId, aa.ApplicantUserId }).IsUnique();
     }
 }

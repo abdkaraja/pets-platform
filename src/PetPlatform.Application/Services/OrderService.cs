@@ -5,6 +5,7 @@ using PetPlatform.Application.DTOs;
 using PetPlatform.Application.Interfaces;
 using PetPlatform.Domain.Entities;
 using PetPlatform.Domain.Enums;
+using static PetPlatform.Application.Common.VariantDescriptionBuilder;
 
 namespace PetPlatform.Application.Services;
 
@@ -72,7 +73,7 @@ public class OrderService : IOrderService
         // Copy each CartItem to OrderItem (preserving historical prices)
         foreach (var cartItem in cart.Items)
         {
-            var variantDesc = BuildVariantDescription(cartItem.ProductVariant);
+            var variantDesc = Build(cartItem.ProductVariant);
             var orderItem = OrderItem.Create(
                 order.Id,
                 cartItem.ProductVariant?.Product?.Name ?? "Unknown Product",
@@ -91,7 +92,44 @@ public class OrderService : IOrderService
         // D-14: Clear cart after checkout
         cart.Clear();
 
-        await _context.SaveChangesAsync();
+        // CR-01: Retry SaveChanges on concurrency conflict (e.g. two users
+        // checking out the last unit of the same variant simultaneously).
+        // The [ConcurrencyCheck] on ProductVariant.StockQuantity causes EF Core
+        // to emit an optimistic-concurrency WHERE clause; on conflict we clear
+        // the tracker, re-fetch, re-validate, and retry up to 3 times.
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+                break;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                _context.ChangeTracker.Clear();
+
+                // Re-fetch the cart items so that stock quantities reflect
+                // the persisted (post-reduce) values.
+                var refreshedVariants = cart.Items
+                    .Where(ci => ci.ProductVariant is not null)
+                    .Select(ci => ci.ProductVariantId)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var variantId in refreshedVariants)
+                {
+                    var freshVariant = await _context.ProductVariants.FindAsync(variantId);
+                    if (freshVariant is null)
+                        return Result<OrderDto>.Failure($"Product variant {variantId} no longer exists.");
+
+                    if (freshVariant.StockQuantity < cart.Items.First(ci => ci.ProductVariantId == variantId).Quantity)
+                        return Result<OrderDto>.Failure($"Insufficient stock for variant {variantId}. Please refresh your cart.");
+                }
+
+                if (attempt == 2)
+                    return Result<OrderDto>.Failure("Checkout could not complete due to high demand. Please try again.");
+            }
+        }
 
         return Result<OrderDto>.Success(await GetOrderByIdAsync(order.Id) ?? MapToDto(order));
     }
@@ -161,6 +199,7 @@ public class OrderService : IOrderService
     {
         Id = order.Id,
         UserId = order.UserId,
+        CustomerEmail = order.UserId, // Maps to UserId; resolve to actual email if/when user service is available
         TotalAmount = order.TotalAmount,
         Status = order.Status,
         ShippingAddress = order.ShippingAddress,
@@ -181,13 +220,4 @@ public class OrderService : IOrderService
             ChangedAt = sh.ChangedAt
         }).ToList()
     };
-
-    private static string BuildVariantDescription(ProductVariant? variant)
-    {
-        if (variant is null) return string.Empty;
-        var parts = new List<string>();
-        if (!string.IsNullOrEmpty(variant.Size)) parts.Add($"Size: {variant.Size}");
-        if (!string.IsNullOrEmpty(variant.Color)) parts.Add($"Color: {variant.Color}");
-        return string.Join(", ", parts);
-    }
 }

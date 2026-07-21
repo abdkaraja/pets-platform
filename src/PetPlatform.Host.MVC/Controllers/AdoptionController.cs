@@ -19,7 +19,6 @@ public class AdoptionController : Controller
         string? breed,
         int? minAge,
         int? maxAge,
-        string? size,
         string? location,
         string? search,
         int page = 1)

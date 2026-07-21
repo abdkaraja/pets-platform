@@ -50,21 +50,20 @@ public class AdoptionListing
         UpdatedAt = DateTime.UtcNow;
     }
 
+    private static readonly Dictionary<ListingStatus, HashSet<ListingStatus>> AllowedTransitions = new()
+    {
+        [ListingStatus.Active] = new() { ListingStatus.Closed, ListingStatus.Adopted },
+        [ListingStatus.Pending] = new() { ListingStatus.Active, ListingStatus.Closed },
+        [ListingStatus.Adopted] = new(),
+        [ListingStatus.Closed] = new()
+    };
+
     public void UpdateStatus(ListingStatus newStatus)
     {
-        if (Status == ListingStatus.Adopted)
-            throw new InvalidOperationException("Cannot change status of an adopted listing.");
-
-        if (newStatus == ListingStatus.Active && Status != ListingStatus.Pending)
+        if (!AllowedTransitions.TryGetValue(Status, out var allowed) || !allowed.Contains(newStatus))
             throw new InvalidOperationException($"Cannot transition from {Status} to {newStatus}.");
 
         Status = newStatus;
-        UpdatedAt = DateTime.UtcNow;
-    }
-
-    public void Close()
-    {
-        Status = ListingStatus.Closed;
         UpdatedAt = DateTime.UtcNow;
     }
 }

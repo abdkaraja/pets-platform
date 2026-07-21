@@ -71,10 +71,21 @@ public class ProductController : Controller
 
         if (imageFile is { Length: > 0 })
         {
+            // WR-04: Validate file type and size
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var maxSizeBytes = 5L * 1024 * 1024; // 5 MB
+
+            var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest("Only JPG, PNG, and WebP images are allowed.");
+
+            if (imageFile.Length > maxSizeBytes)
+                return BadRequest("File size must be under 5 MB.");
+
             var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products");
             Directory.CreateDirectory(uploadsDir);
 
-            var uniqueName = $"{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+            var uniqueName = $"{Guid.NewGuid()}{ext}";
             var filePath = Path.Combine(uploadsDir, uniqueName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -145,10 +156,21 @@ public class ProductController : Controller
 
         if (imageFile is { Length: > 0 })
         {
+            // WR-04: Validate file type and size
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var maxSizeBytes = 5L * 1024 * 1024; // 5 MB
+
+            var ext = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                return BadRequest("Only JPG, PNG, and WebP images are allowed.");
+
+            if (imageFile.Length > maxSizeBytes)
+                return BadRequest("File size must be under 5 MB.");
+
             var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "products");
             Directory.CreateDirectory(uploadsDir);
 
-            var uniqueName = $"{Guid.NewGuid()}{Path.GetExtension(imageFile.FileName)}";
+            var uniqueName = $"{Guid.NewGuid()}{ext}";
             var filePath = Path.Combine(uploadsDir, uniqueName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))

@@ -8,6 +8,7 @@ using PetPlatform.Domain.Entities;
 using PetPlatform.Domain.Enums;
 using Stripe;
 using Stripe.Checkout;
+using static PetPlatform.Application.Common.VariantDescriptionBuilder;
 
 namespace PetPlatform.Infrastructure.Services;
 
@@ -53,7 +54,7 @@ public class PaymentService : IPaymentService
                 ProductData = new SessionLineItemPriceDataProductDataOptions
                 {
                     Name = ci.ProductVariant?.Product?.Name ?? "Product",
-                    Description = BuildVariantDescription(ci.ProductVariant)
+                    Description = Build(ci.ProductVariant)
                 }
             },
             Quantity = ci.Quantity
@@ -109,6 +110,8 @@ public class PaymentService : IPaymentService
         if (session?.PaymentIntentId is null) return null;
 
         var order = await _context.Orders
+            .Include(o => o.Items)
+            .Include(o => o.StatusHistory)
             .FirstOrDefaultAsync(o => o.StripePaymentIntentId == session.PaymentIntentId);
 
         if (order is null) return null;
@@ -123,14 +126,5 @@ public class PaymentService : IPaymentService
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt
         };
-    }
-
-    private static string BuildVariantDescription(ProductVariant? variant)
-    {
-        if (variant is null) return string.Empty;
-        var parts = new List<string>();
-        if (!string.IsNullOrEmpty(variant.Size)) parts.Add($"Size: {variant.Size}");
-        if (!string.IsNullOrEmpty(variant.Color)) parts.Add($"Color: {variant.Color}");
-        return string.Join(", ", parts);
     }
 }

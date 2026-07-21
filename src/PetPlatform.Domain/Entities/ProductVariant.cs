@@ -10,6 +10,7 @@ public class ProductVariant
     public string? Color { get; private set; }
     public decimal? Weight { get; private set; }
     public decimal PriceMultiplier { get; private set; }
+    [System.ComponentModel.DataAnnotations.Schema.ConcurrencyCheck]
     public int StockQuantity { get; private set; }
     public string? Sku { get; private set; }
 
@@ -21,7 +22,7 @@ public class ProductVariant
                                         string? size = null, string? color = null,
                                         decimal? weight = null, string? sku = null)
     {
-        Guard.Against.NullOrWhiteSpace(productId.ToString(), nameof(productId));
+        Guard.Against.Zero(productId, nameof(productId));
 
         return new ProductVariant
         {

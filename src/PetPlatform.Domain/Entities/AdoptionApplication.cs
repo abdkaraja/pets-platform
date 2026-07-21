@@ -12,6 +12,13 @@ public class AdoptionApplication
     public ApplicationStatus Status { get; private set; }
     public string? ReviewedByUserId { get; private set; }
     public string? ReviewNotes { get; private set; }
+    public HousingType HousingType { get; private set; }
+    public bool HasYard { get; private set; }
+    public int NumberOfOccupants { get; private set; }
+    public bool HasChildren { get; private set; }
+    public string? PreviousPets { get; private set; }
+    public string? CurrentPets { get; private set; }
+    public string? ExperienceLevel { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
@@ -29,7 +36,17 @@ public class AdoptionApplication
         [ApplicationStatus.Withdrawn] = new()
     };
 
-    public static AdoptionApplication Create(int listingId, string applicantUserId, string? message = null)
+    public static AdoptionApplication Create(
+        int listingId,
+        string applicantUserId,
+        string? message,
+        HousingType housingType,
+        bool hasYard,
+        int numberOfOccupants,
+        bool hasChildren,
+        string? previousPets,
+        string? currentPets,
+        string? experienceLevel)
     {
         Guard.Against.Zero(listingId, nameof(listingId));
         Guard.Against.NullOrWhiteSpace(applicantUserId, nameof(applicantUserId));
@@ -39,6 +56,13 @@ public class AdoptionApplication
             ListingId = listingId,
             ApplicantUserId = applicantUserId,
             Message = message,
+            HousingType = housingType,
+            HasYard = hasYard,
+            NumberOfOccupants = numberOfOccupants,
+            HasChildren = hasChildren,
+            PreviousPets = previousPets,
+            CurrentPets = currentPets,
+            ExperienceLevel = experienceLevel,
             Status = ApplicationStatus.Submitted,
             CreatedAt = DateTime.UtcNow
         };

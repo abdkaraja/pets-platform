@@ -43,6 +43,9 @@ public class LostPetController : Controller
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
+        var validationError = ValidatePhotos(photos);
+        if (validationError != null) return BadRequest(validationError);
+
         var result = await _lostPetService.CreateReportAsync(dto, userId, photos);
         if (result.IsSuccess)
         {
@@ -102,6 +105,9 @@ public class LostPetController : Controller
         var userId = GetUserId();
         if (string.IsNullOrEmpty(userId)) return Challenge();
 
+        var validationError = ValidatePhotos(photos);
+        if (validationError != null) return BadRequest(validationError);
+
         var result = await _lostPetService.UpdateReportAsync(id, dto, userId, photos);
         if (result.IsSuccess)
         {
@@ -160,5 +166,28 @@ public class LostPetController : Controller
         }
 
         return RedirectToAction(nameof(Notifications));
+    }
+
+    private static string? ValidatePhotos(List<IFormFile> photos)
+    {
+        if (photos == null || photos.Count == 0) return null;
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var maxSizeBytes = 5 * 1024 * 1024; // 5 MB
+        var maxCount = 5;
+
+        foreach (var file in photos)
+        {
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+                return $"File type '{ext}' is not allowed. Allowed types: {string.Join(", ", allowedExtensions)}.";
+            if (file.Length > maxSizeBytes)
+                return $"File '{file.FileName}' exceeds the {maxSizeBytes / 1024 / 1024}MB limit.";
+        }
+
+        if (photos.Count > maxCount)
+            return $"Maximum {maxCount} photos allowed.";
+
+        return null;
     }
 }

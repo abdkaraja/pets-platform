@@ -21,6 +21,9 @@ public class LostPetService : ILostPetService
 
     public async Task<PagedResultDto<LostPetReportDto>> SearchReportsAsync(LostPetReportFilterDto filter)
     {
+        filter.Page = Math.Max(1, filter.Page);
+        filter.PageSize = Math.Clamp(filter.PageSize, 1, 100);
+
         var query = _context.LostPetReports
             .Include(r => r.Pet)
             .Include(r => r.Photos)
@@ -87,15 +90,15 @@ public class LostPetService : ILostPetService
 
     public async Task<Result<LostPetReportDto>> CreateReportAsync(CreateLostPetReportDto dto, string reporterUserId, List<IFormFile>? photos = null)
     {
-        var report = new LostPetReport(
+        var report = LostPetReport.Create(
             reporterUserId: reporterUserId,
             reportType: dto.ReportType,
             species: dto.Species,
-            breed: dto.Breed,
             color: dto.Color,
             location: dto.Location,
             dateReported: dto.DateReported,
             description: dto.Description,
+            breed: dto.Breed,
             petId: dto.PetId);
 
         _context.LostPetReports.Add(report);
@@ -106,13 +109,14 @@ public class LostPetService : ILostPetService
             foreach (var photo in photos)
             {
                 var photoPath = await _fileStorage.SaveFileAsync(photo, "lost-pets");
-                var reportPhoto = new LostPetReportPhoto(report.Id, photoPath);
+                var reportPhoto = LostPetReportPhoto.Create(report.Id, photoPath);
                 _context.LostPetReportPhotos.Add(reportPhoto);
             }
             await _context.SaveChangesAsync();
         }
 
         await CheckForMatchesAsync(report);
+        await _context.SaveChangesAsync();
 
         return Result<LostPetReportDto>.Success(MapToDto(report));
     }
@@ -125,7 +129,7 @@ public class LostPetService : ILostPetService
         if (report == null)
             return Result<LostPetReportDto>.Failure("Report not found or you are not authorized to edit it.");
 
-        report.Update(
+        report.UpdateDetails(
             color: dto.Color,
             breed: dto.Breed,
             location: dto.Location,
@@ -137,7 +141,7 @@ public class LostPetService : ILostPetService
             foreach (var photo in photos)
             {
                 var photoPath = await _fileStorage.SaveFileAsync(photo, "lost-pets");
-                var reportPhoto = new LostPetReportPhoto(report.Id, photoPath);
+                var reportPhoto = LostPetReportPhoto.Create(report.Id, photoPath);
                 _context.LostPetReportPhotos.Add(reportPhoto);
             }
         }
@@ -220,18 +224,23 @@ public class LostPetService : ILostPetService
                 (r.Location.Contains(newReport.Location) || newReport.Location.Contains(r.Location)))
             .ToListAsync();
 
+        var candidateIds = candidates.Select(c => c.Id).ToList();
+        var existingNotificationPairs = await _context.MatchNotifications
+            .Where(n =>
+                candidateIds.Contains(n.MatchedReportId) || candidateIds.Contains(n.TriggeredReportId))
+            .Select(n => new { n.MatchedReportId, n.TriggeredReportId })
+            .ToListAsync();
+        var existingSet = existingNotificationPairs
+            .SelectMany(n => new[] { (n.MatchedReportId, n.TriggeredReportId), (n.TriggeredReportId, n.MatchedReportId) })
+            .ToHashSet();
+
         foreach (var candidate in candidates)
         {
-            var alreadyNotified = await _context.MatchNotifications
-                .AnyAsync(n =>
-                    (n.MatchedReportId == newReport.Id && n.TriggeredReportId == candidate.Id) ||
-                    (n.MatchedReportId == candidate.Id && n.TriggeredReportId == newReport.Id));
-
-            if (!alreadyNotified)
+            if (!existingSet.Contains((newReport.Id, candidate.Id)) && !existingSet.Contains((candidate.Id, newReport.Id)))
             {
                 var message = $"Potential match: {candidate.Species} reported as {candidate.ReportType} in {candidate.Location}.";
-                var notif1 = new MatchNotification(newReport.Id, candidate.Id, candidate.ReporterUserId, message);
-                var notif2 = new MatchNotification(candidate.Id, newReport.Id, newReport.ReporterUserId, message);
+                var notif1 = MatchNotification.Create(newReport.Id, candidate.Id, candidate.ReporterUserId, message);
+                var notif2 = MatchNotification.Create(candidate.Id, newReport.Id, newReport.ReporterUserId, message);
                 _context.MatchNotifications.AddRange(notif1, notif2);
             }
         }

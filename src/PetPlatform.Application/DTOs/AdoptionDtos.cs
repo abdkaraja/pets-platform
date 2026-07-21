@@ -54,6 +54,13 @@ public class AdoptionApplicationDto
     public int ListingId { get; init; }
     public string ApplicantUserId { get; init; } = string.Empty;
     public string? Message { get; init; }
+    public HousingType HousingType { get; init; }
+    public bool HasYard { get; init; }
+    public int NumberOfOccupants { get; init; }
+    public bool HasChildren { get; init; }
+    public string? PreviousPets { get; init; }
+    public string? CurrentPets { get; init; }
+    public string? ExperienceLevel { get; init; }
     public ApplicationStatus Status { get; init; }
     public string? ReviewedByUserId { get; init; }
     public string? ReviewNotes { get; init; }

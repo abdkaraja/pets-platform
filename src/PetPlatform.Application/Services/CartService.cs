@@ -4,6 +4,7 @@ using PetPlatform.Application.Common;
 using PetPlatform.Application.DTOs;
 using PetPlatform.Application.Interfaces;
 using PetPlatform.Domain.Entities;
+using static PetPlatform.Application.Common.VariantDescriptionBuilder;
 
 namespace PetPlatform.Application.Services;
 
@@ -99,6 +100,10 @@ public class CartService : ICartService
         if (cartItem is null)
             return Result<CartDto>.Failure("Cart item not found.");
 
+        // D-12: Quantity must be at least 1 (zero/quantity items should be removed instead)
+        if (dto.Quantity <= 0)
+            return Result<CartDto>.Failure("Quantity must be at least 1. Use Remove to delete items.");
+
         // D-12: Validate new quantity
         if (dto.Quantity > cartItem.ProductVariant.StockQuantity)
             return Result<CartDto>.Failure($"Only {cartItem.ProductVariant.StockQuantity} items available in stock.");
@@ -151,7 +156,7 @@ public class CartService : ICartService
             Id = ci.Id,
             ProductVariantId = ci.ProductVariantId,
             ProductName = ci.ProductVariant?.Product?.Name ?? string.Empty,
-            VariantDescription = BuildVariantDescription(ci.ProductVariant),
+            VariantDescription = Build(ci.ProductVariant),
             ImagePath = ci.ProductVariant?.Product?.ImagePath,
             Quantity = ci.Quantity,
             LockedPrice = ci.LockedPrice
@@ -163,14 +168,5 @@ public class CartService : ICartService
             UserId = cart.UserId,
             Items = items
         };
-    }
-
-    private static string BuildVariantDescription(ProductVariant? variant)
-    {
-        if (variant is null) return string.Empty;
-        var parts = new List<string>();
-        if (!string.IsNullOrEmpty(variant.Size)) parts.Add($"Size: {variant.Size}");
-        if (!string.IsNullOrEmpty(variant.Color)) parts.Add($"Color: {variant.Color}");
-        return string.Join(", ", parts);
     }
 }

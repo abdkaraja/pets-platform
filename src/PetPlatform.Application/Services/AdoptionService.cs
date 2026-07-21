@@ -59,10 +59,13 @@ public class AdoptionService : IAdoptionService
 
         var totalCount = await query.CountAsync();
 
+        var page = Math.Max(1, filter.Page);
+        var pageSize = Math.Clamp(filter.PageSize, 1, 50);
+
         var items = await query
             .OrderByDescending(al => al.CreatedAt)
-            .Skip((filter.Page - 1) * filter.PageSize)
-            .Take(filter.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(al => MapToListingDto(al))
             .ToListAsync();
 
@@ -70,8 +73,8 @@ public class AdoptionService : IAdoptionService
         {
             Items = items,
             TotalCount = totalCount,
-            Page = filter.Page,
-            PageSize = filter.PageSize
+            Page = page,
+            PageSize = pageSize
         };
     }
 
@@ -109,11 +112,21 @@ public class AdoptionService : IAdoptionService
         if (existingApplication is not null)
             return Result<AdoptionApplicationDto>.Failure("You have already applied for this pet.");
 
-        var application = AdoptionApplication.Create(dto.ListingId, applicantUserId, dto.Message);
+        var application = AdoptionApplication.Create(
+            dto.ListingId,
+            applicantUserId,
+            dto.Message,
+            dto.HousingType,
+            dto.HasYard,
+            dto.NumberOfOccupants,
+            dto.HasChildren,
+            dto.PreviousPets,
+            dto.CurrentPets,
+            dto.ExperienceLevel);
         _context.AdoptionApplications.Add(application);
         await _context.SaveChangesAsync();
 
-        return Result<AdoptionApplicationDto>.Success(await MapToApplicationDtoAsync(application));
+        return Result<AdoptionApplicationDto>.Success(MapToApplicationDto(application));
     }
 
     public async Task<IEnumerable<AdoptionApplicationDto>> GetMyApplicationsAsync(string userId)
@@ -129,6 +142,20 @@ public class AdoptionService : IAdoptionService
             .ToListAsync();
 
         return applications.Select(a => MapToApplicationDto(a));
+    }
+
+    public async Task<AdoptionApplicationDto?> GetApplicationByIdAsync(int applicationId, string userId)
+    {
+        Guard.Against.NullOrWhiteSpace(userId, nameof(userId));
+
+        var application = await _context.AdoptionApplications
+            .Where(aa => aa.Id == applicationId && aa.ApplicantUserId == userId)
+            .Include(aa => aa.Listing)
+                .ThenInclude(l => l.Pet)
+            .Include(aa => aa.StatusHistory)
+            .FirstOrDefaultAsync();
+
+        return application is null ? null : MapToApplicationDto(application);
     }
 
     public async Task<Result<bool>> WithdrawApplicationAsync(int applicationId, string userId)
@@ -248,7 +275,7 @@ public class AdoptionService : IAdoptionService
         if (listing.Status != ListingStatus.Active)
             return Result<bool>.Failure("Only active listings can be closed.");
 
-        listing.Close();
+        listing.UpdateStatus(ListingStatus.Closed);
         await _context.SaveChangesAsync();
         return Result<bool>.Success(true);
     }
@@ -271,6 +298,26 @@ public class AdoptionService : IAdoptionService
             .ToListAsync();
 
         return applications.Select(a => MapToApplicationDto(a));
+    }
+
+    public async Task<AdoptionApplicationDto?> GetApplicationForReviewAsync(int applicationId, string shelterUserId)
+    {
+        Guard.Against.NullOrWhiteSpace(shelterUserId, nameof(shelterUserId));
+
+        var application = await _context.AdoptionApplications
+            .Where(aa => aa.Id == applicationId)
+            .Include(aa => aa.Listing)
+                .ThenInclude(l => l.Pet)
+            .Include(aa => aa.StatusHistory)
+            .FirstOrDefaultAsync();
+
+        if (application is null)
+            return null;
+
+        if (application.Listing.ShelterUserId != shelterUserId)
+            return null;
+
+        return MapToApplicationDto(application);
     }
 
     public async Task<Result<AdoptionApplicationDto>> ReviewApplicationAsync(int applicationId, ReviewApplicationDto dto, string reviewerUserId)
@@ -298,6 +345,10 @@ public class AdoptionService : IAdoptionService
 
         if (application.Status != ApplicationStatus.Submitted && application.Status != ApplicationStatus.UnderReview)
             return Result<AdoptionApplicationDto>.Failure("This application has already been decided.");
+
+        var allowedShelterStatuses = new[] { ApplicationStatus.UnderReview, ApplicationStatus.Approved, ApplicationStatus.Rejected };
+        if (!allowedShelterStatuses.Contains(dto.Status))
+            return Result<AdoptionApplicationDto>.Failure("Invalid review status.");
 
         try
         {
@@ -356,6 +407,13 @@ public class AdoptionService : IAdoptionService
         ListingId = application.ListingId,
         ApplicantUserId = application.ApplicantUserId,
         Message = application.Message,
+        HousingType = application.HousingType,
+        HasYard = application.HasYard,
+        NumberOfOccupants = application.NumberOfOccupants,
+        HasChildren = application.HasChildren,
+        PreviousPets = application.PreviousPets,
+        CurrentPets = application.CurrentPets,
+        ExperienceLevel = application.ExperienceLevel,
         Status = application.Status,
         ReviewedByUserId = application.ReviewedByUserId,
         ReviewNotes = application.ReviewNotes,
@@ -369,9 +427,4 @@ public class AdoptionService : IAdoptionService
             ChangedAt = sh.ChangedAt
         }).ToList() ?? new List<ApplicationStatusHistoryDto>()
     };
-
-    private static async Task<AdoptionApplicationDto> MapToApplicationDtoAsync(AdoptionApplication application)
-    {
-        return MapToApplicationDto(application);
-    }
 }

@@ -10,6 +10,7 @@ public interface IAdoptionService
     Task<AdoptionListingDto?> GetListingByIdAsync(int id);
     Task<Result<AdoptionApplicationDto>> SubmitApplicationAsync(CreateApplicationDto dto, string applicantUserId);
     Task<IEnumerable<AdoptionApplicationDto>> GetMyApplicationsAsync(string userId);
+    Task<AdoptionApplicationDto?> GetApplicationByIdAsync(int applicationId, string userId);
     Task<Result<bool>> WithdrawApplicationAsync(int applicationId, string userId);
 
     // Shelter-facing
@@ -18,5 +19,6 @@ public interface IAdoptionService
     Task<Result<AdoptionListingDto>> UpdateListingAsync(int id, UpdateListingDto dto, string shelterUserId);
     Task<Result<bool>> CloseListingAsync(int id, string shelterUserId);
     Task<IEnumerable<AdoptionApplicationDto>> GetApplicationsForListingAsync(int listingId, string shelterUserId);
+    Task<AdoptionApplicationDto?> GetApplicationForReviewAsync(int applicationId, string shelterUserId);
     Task<Result<AdoptionApplicationDto>> ReviewApplicationAsync(int applicationId, ReviewApplicationDto dto, string reviewerUserId);
 }

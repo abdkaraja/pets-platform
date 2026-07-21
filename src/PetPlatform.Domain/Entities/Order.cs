@@ -32,6 +32,8 @@ public class Order
             CreatedAt = DateTime.UtcNow
         };
 
+        // Note: order.Id is 0 here (pre-persist), but EF Core will fix up
+        // OrderId via the StatusHistory navigation collection during SaveChangesAsync.
         order.StatusHistory.Add(OrderStatusHistory.Create(order.Id, OrderStatus.Pending));
 
         return order;
