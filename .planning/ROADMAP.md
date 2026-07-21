@@ -96,7 +96,13 @@ Plans:
   2. User can search lost pet reports by species, breed, color, location, and date range
   3. User receives basic alerts when new lost pet reports match their area or previously reported pets
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+
+- [ ] 04-01-PLAN.md — Domain entities, database schema & service layer foundation
+- [ ] 04-02-PLAN.md — Customer-facing reporting & search UI
+- [ ] 04-03-PLAN.md — Notifications & navigation integration
+
 **UI hint**: yes
 
 ### Phase 5: Medical Records & Admin Expansion
@@ -110,7 +116,13 @@ Plans:
   2. Vet can create medication records and visit notes for assigned pets
   3. Pet owner can view their pet's complete medical history (vaccinations, medications, visits)
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+
+- [ ] 05-01-PLAN.md — Domain entities, database schema, DTOs, validators, service layer foundation
+- [ ] 05-02-PLAN.md — Vet area controllers/views, dashboard, profile, medical record forms
+- [ ] 05-03-PLAN.md — Customer medical history, vet discovery, admin vet management, navigation
+
 **UI hint**: yes
 
 ## Progress
@@ -123,5 +135,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation, Identity & Core Profiles | 3/3 | Complete | 2026-07-18 |
 | 2. E-Commerce Module | 3/3 | Complete | 2026-07-18 |
 | 3. Adoption Module | 3/3 | Complete | 2026-07-20 |
-| 4. Lost Pets Module | 0/0 | Not started | - |
-| 5. Medical Records & Admin Expansion | 0/0 | Not started | - |
+| 4. Lost Pets Module | 0/3 | Not started | - |
+| 5. Medical Records & Admin Expansion | 0/3 | Not started | - |
