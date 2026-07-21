@@ -1,0 +1,201 @@
+@model PetPlatform.Host.MVC.Areas.Vet.Controllers.PetDetailsViewModel
+
+<div class="space-y-6">
+    <!-- Pet Info Card -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">@Model.PetName</h2>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-gray-600">Owner: @Model.Assignment.RequestedByUserId</p>
+            <p class="text-sm text-gray-600">Assigned: @Model.Assignment.CreatedAt.ToString("MMM dd, yyyy")</p>
+        </div>
+    </div>
+
+    <!-- Add Record Buttons -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-md font-semibold text-gray-800">Add Medical Record</h3>
+        </div>
+        <div class="px-6 py-4 space-x-3">
+            <a asp-area="Vet" asp-controller="Vaccination" asp-action="Create" asp-route-petId="@Model.PetId"
+               class="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+                Vaccination
+            </a>
+            <a asp-area="Vet" asp-controller="Medication" asp-action="Create" asp-route-petId="@Model.PetId"
+               class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+                Medication
+            </a>
+            <a asp-area="Vet" asp-controller="VisitNote" asp-action="Create" asp-route-petId="@Model.PetId"
+               class="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm">
+                Visit Note
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Records (Last 5) -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-md font-semibold text-gray-800">Recent Medical Records (Last 5)</h3>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.RecentRecords.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Summary</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Vet</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var record in Model.RecentRecords)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @switch (record.RecordType)
+                                    {
+                                        case PetPlatform.Domain.Enums.MedicalRecordType.Vaccination:
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Vaccination</span>
+                                            break;
+                                        case PetPlatform.Domain.Enums.MedicalRecordType.Medication:
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Medication</span>
+                                            break;
+                                        case PetPlatform.Domain.Enums.MedicalRecordType.VisitNote:
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Visit Note</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@record.Date.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">@record.Summary</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@record.VetUserName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-12 text-center text-gray-500">
+                    <p>No medical records yet.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Vaccinations -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-md font-semibold text-gray-800">Vaccinations</h3>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.Vaccinations.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Vaccine</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Batch/Lot</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Next Due</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var v in Model.Vaccinations)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@v.VaccineName</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@v.DateAdministered.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@(v.BatchLotNumber ?? "-")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@(v.NextDueDate?.ToString("MMM dd, yyyy") ?? "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-6 text-center text-gray-500 text-sm">No vaccinations recorded.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Medications -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-md font-semibold text-gray-800">Medications</h3>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.Medications.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Medication</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Dosage</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Frequency</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Start Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var m in Model.Medications)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@m.MedicationName</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@m.Dosage</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@m.Frequency</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@m.StartDate.ToString("MMM dd, yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-6 text-center text-gray-500 text-sm">No medications recorded.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Visit Notes -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-md font-semibold text-gray-800">Visit Notes</h3>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.VisitNotes.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Visit Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Assessment</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Vet</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var vn in Model.VisitNotes)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@vn.VisitDate.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 text-sm text-gray-500">@vn.Assessment</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@vn.VetUserName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-6 text-center text-gray-500 text-sm">No visit notes recorded.</div>
+            }
+        </div>
+    </div>
+
+    <div>
+        <a asp-area="Vet" asp-controller="Pets" asp-action="Index"
+           class="text-blue-600 hover:text-blue-900 text-sm">&larr; Back to Assigned Pets</a>
+    </div>
+</div>

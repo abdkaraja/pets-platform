@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Vet Panel - PetPlatform</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-gray-50">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white flex-shrink-0">
+            <div class="p-4 border-b border-gray-700">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="text-lg font-bold text-white hover:text-gray-300">
+                    PetPlatform
+                </a>
+                <p class="text-xs text-gray-400 mt-1">Vet Panel</p>
+            </div>
+            <nav class="p-4">
+                <ul class="space-y-1">
+                    <li>
+                        <a asp-area="Vet" asp-controller="Dashboard" asp-action="Index"
+                           class="block px-3 py-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white">
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Vet" asp-controller="Profile" asp-action="Index"
+                           class="block px-3 py-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white">
+                            My Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Vet" asp-controller="Pets" asp-action="Index"
+                           class="block px-3 py-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white">
+                            Assigned Pets
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Vet" asp-controller="Assignment" asp-action="Pending"
+                           class="block px-3 py-2 rounded hover:bg-gray-700 text-gray-300 hover:text-white">
+                            Pending Requests
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col">
+            <header class="bg-white shadow">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <h1 class="text-xl font-semibold text-gray-800">@ViewData["Title"]</h1>
+                    <a asp-area="" asp-controller="Home" asp-action="Index"
+                       class="text-sm text-gray-600 hover:text-gray-900">
+                        Back to Site
+                    </a>
+                </div>
+            </header>
+            <main class="flex-1 p-6">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

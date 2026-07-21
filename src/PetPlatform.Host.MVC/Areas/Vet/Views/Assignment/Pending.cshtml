@@ -1,0 +1,51 @@
+@model IEnumerable<PetPlatform.Application.DTOs.VetAssignmentDto>
+
+<div class="space-y-6">
+    @if (TempData["Error"] != null)
+    {
+        <div class="bg-red-50 border border-red-200 rounded-md p-4">
+            <p class="text-sm text-red-700">@TempData["Error"]</p>
+        </div>
+    }
+
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Pending Requests</h2>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pet Name</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Requested By</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var request in Model)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@request.PetName</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@request.RequestedByUserId</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@request.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <a asp-area="Vet" asp-controller="Assignment" asp-action="Details" asp-route-id="@request.Id"
+                                       class="text-blue-600 hover:text-blue-900">View Details</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-12 text-center text-gray-500">
+                    <p>No pending requests.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>

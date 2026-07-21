@@ -1,0 +1,105 @@
+@model PetPlatform.Application.DTOs.VetDashboardDto
+
+<div class="space-y-6">
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500">Assigned Pets</h3>
+            <p class="mt-2 text-3xl font-bold text-gray-900">@Model.TotalAssignedPets</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6 @(Model.PendingRequests > 0 ? "border-l-4 border-yellow-400" : "")">
+            <h3 class="text-sm font-medium text-gray-500">Pending Requests</h3>
+            <p class="mt-2 text-3xl font-bold @(Model.PendingRequests > 0 ? "text-yellow-600" : "text-gray-900")">@Model.PendingRequests</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-sm font-medium text-gray-500">Recent Records</h3>
+            <p class="mt-2 text-3xl font-bold text-gray-900">@Model.RecentRecordsCount</p>
+        </div>
+    </div>
+
+    <!-- Assigned Pets Table -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Assigned Pets</h2>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.AssignedPets.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pet Name</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Owner</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Assigned Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var pet in Model.AssignedPets)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@pet.PetName</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@pet.RequestedByUserId</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@pet.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                                    <a asp-area="Vet" asp-controller="Vaccination" asp-action="Create" asp-route-petId="@pet.PetId"
+                                       class="text-green-600 hover:text-green-900">Add Record</a>
+                                    <a asp-area="Vet" asp-controller="Pets" asp-action="Details" asp-route-id="@pet.PetId"
+                                       class="text-blue-600 hover:text-blue-900">View Details</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-12 text-center text-gray-500">
+                    <p>No assigned pets yet.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Pending Requests</h2>
+        </div>
+        <div class="overflow-x-auto">
+            @if (Model.PendingRequestsList.Any())
+            {
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pet Name</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Requested By</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var request in Model.PendingRequestsList)
+                        {
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">@request.PetName</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@request.RequestedByUserId</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">@request.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <a asp-area="Vet" asp-controller="Assignment" asp-action="Details" asp-route-id="@request.Id"
+                                       class="text-blue-600 hover:text-blue-900">View</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="px-6 py-12 text-center text-gray-500">
+                    <p>No pending requests.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
