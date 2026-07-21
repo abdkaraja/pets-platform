@@ -46,7 +46,10 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Permission:Categories.Manage", policy => policy.RequireClaim("Permission", "Categories.Manage"))
     .AddPolicy("Permission:Inventory.Manage", policy => policy.RequireClaim("Permission", "Inventory.Manage"))
     .AddPolicy("Permission:Orders.Manage", policy => policy.RequireClaim("Permission", "Orders.Manage"))
-    .AddPolicy("Permission:Adoptions.Manage", policy => policy.RequireClaim("Permission", "Adoptions.Manage"));
+    .AddPolicy("Permission:Adoptions.Manage", policy => policy.RequireClaim("Permission", "Adoptions.Manage"))
+    .AddPolicy("Permission:Vets.View", policy => policy.RequireClaim("Permission", "Vets.View"))
+    .AddPolicy("Permission:Vets.Manage", policy => policy.RequireClaim("Permission", "Vets.Manage"))
+    .AddPolicy("Permission:Records.View", policy => policy.RequireClaim("Permission", "Records.View"));
 
 // ── Email sender (console-log stub for Phase 1) ────────────────────────
 builder.Services.AddScoped(typeof(IEmailSender<>), typeof(EmailSender<>));

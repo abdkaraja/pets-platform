@@ -28,7 +28,7 @@ public static class SeedData
         var adminRole = await roleManager.FindByNameAsync("Admin");
         if (adminRole != null)
         {
-            var permissions = new[] { "Users.View", "Users.Manage", "Roles.Create", "Roles.Assign", "Pets.Manage" };
+            var permissions = new[] { "Users.View", "Users.Manage", "Roles.Create", "Roles.Assign", "Pets.Manage", "Vets.View", "Vets.Manage", "Records.View" };
             foreach (var perm in permissions)
             {
                 var claims = await roleManager.GetClaimsAsync(adminRole);
