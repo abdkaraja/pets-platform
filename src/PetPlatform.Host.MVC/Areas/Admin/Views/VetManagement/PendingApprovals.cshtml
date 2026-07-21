@@ -1,0 +1,65 @@
+@model IEnumerable<PetPlatform.Application.DTOs.VetProfileDto>
+@{
+    ViewData["Title"] = "Pending Vet Approvals";
+}
+
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6">
+        <a asp-action="Index" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Back to Vet Management</a>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-6">Pending Vet Approvals</h1>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            @TempData["Success"]
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+            <p class="text-gray-500 text-lg">No pending approvals</p>
+        </div>
+    }
+    else
+    {
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Name</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Clinic</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Specialty</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Requested</th>
+                        <th class="px-4 py-3 text-right text-gray-600 font-medium">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var vet in Model)
+                    {
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium text-gray-800">@vet.FullName</td>
+                            <td class="px-4 py-3 text-gray-600">@(vet.Clinic ?? "—")</td>
+                            <td class="px-4 py-3 text-gray-600">@(vet.Specialty ?? "—")</td>
+                            <td class="px-4 py-3 text-gray-500">@vet.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex gap-2 justify-end">
+                                    <form asp-action="Approve" asp-route-id="@vet.Id" method="post" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white text-xs font-medium py-1 px-3 rounded">
+                                            Approve
+                                        </button>
+                                    </form>
+                                    <a asp-action="Details" asp-route-id="@vet.Id"
+                                       class="text-blue-600 hover:text-blue-800 text-sm py-1">View Profile</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

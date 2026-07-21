@@ -1,0 +1,111 @@
+@model IEnumerable<PetPlatform.Application.DTOs.MedicalRecordSummaryDto>
+@{
+    ViewData["Title"] = "All Medical Records";
+    var currentPage = ViewBag.CurrentPage as int? ?? 1;
+    var totalPages = ViewBag.TotalPages as int? ?? 1;
+    var petId = ViewBag.PetId as int?;
+}
+
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6">
+        <a asp-action="Index" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Back to Vet Management</a>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-4">All Medical Records</h1>
+
+    <!-- Filter by Pet -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <form asp-action="MedicalRecords" method="get" class="flex items-end gap-4">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-600 mb-1">Filter by Pet ID</label>
+                <input type="number" name="petId" value="@petId"
+                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                       placeholder="Enter pet ID..." />
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded">
+                Filter
+            </button>
+            @if (petId.HasValue)
+            {
+                <a asp-action="MedicalRecords" class="text-gray-500 hover:text-gray-700 text-sm py-2">Clear</a>
+            }
+        </form>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+            <p class="text-gray-500 text-lg">No medical records found</p>
+        </div>
+    }
+    else
+    {
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Pet</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Type</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Date</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Vet</th>
+                        <th class="px-4 py-3 text-left text-gray-600 font-medium">Summary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in Model)
+                    {
+                        string badgeClass = record.RecordType switch
+                        {
+                            PetPlatform.Domain.Enums.MedicalRecordType.Vaccination => "bg-green-100 text-green-800",
+                            PetPlatform.Domain.Enums.MedicalRecordType.Medication => "bg-blue-100 text-blue-800",
+                            PetPlatform.Domain.Enums.MedicalRecordType.VisitNote => "bg-purple-100 text-purple-800",
+                            _ => "bg-gray-100 text-gray-800"
+                        };
+
+                        string typeName = record.RecordType switch
+                        {
+                            PetPlatform.Domain.Enums.MedicalRecordType.Vaccination => "Vaccination",
+                            PetPlatform.Domain.Enums.MedicalRecordType.Medication => "Medication",
+                            PetPlatform.Domain.Enums.MedicalRecordType.VisitNote => "Visit Note",
+                            _ => "Record"
+                        };
+
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium text-gray-800">@record.PetName</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium @badgeClass">
+                                    @typeName
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-500">@record.Date.ToString("MMM dd, yyyy")</td>
+                            <td class="px-4 py-3 text-gray-600">@record.VetUserName</td>
+                            <td class="px-4 py-3 text-gray-600 max-w-xs truncate">@record.Summary</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages > 1)
+        {
+            <div class="flex justify-center gap-2 mt-6">
+                @if (currentPage > 1)
+                {
+                    <a asp-action="MedicalRecords" asp-route-page="@(currentPage - 1)" asp-route-petId="@petId"
+                       class="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">
+                        &laquo; Previous
+                    </a>
+                }
+                <span class="px-3 py-2 text-sm text-gray-600">Page @currentPage of @totalPages</span>
+                @if (currentPage < totalPages)
+                {
+                    <a asp-action="MedicalRecords" asp-route-page="@(currentPage + 1)" asp-route-petId="@petId"
+                       class="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">
+                        Next &raquo;
+                    </a>
+                }
+            </div>
+        }
+    }
+</div>
