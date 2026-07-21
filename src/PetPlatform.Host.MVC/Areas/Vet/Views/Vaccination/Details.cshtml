@@ -1,0 +1,47 @@
+@model PetPlatform.Application.DTOs.VaccinationRecordDto
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Vaccination Record</h2>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Pet</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.PetName</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Vaccine Name</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.VaccineName</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Date Administered</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.DateAdministered.ToString("MMM dd, yyyy")</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Batch/Lot Number</label>
+                <p class="mt-1 text-sm text-gray-900">@(Model.BatchLotNumber ?? "N/A")</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Next Due Date</label>
+                <p class="mt-1 text-sm text-gray-900">@(Model.NextDueDate?.ToString("MMM dd, yyyy") ?? "N/A")</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Notes</label>
+                <p class="mt-1 text-sm text-gray-900">@(Model.Notes ?? "N/A")</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Recorded By</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.VetUserName</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Created</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200">
+            <a asp-area="Vet" asp-controller="Pets" asp-action="Details" asp-route-id="@Model.PetId"
+               class="text-blue-600 hover:text-blue-900 text-sm">&larr; Back to Pet</a>
+        </div>
+    </div>
+</div>

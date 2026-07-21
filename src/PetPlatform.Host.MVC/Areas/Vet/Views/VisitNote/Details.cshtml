@@ -1,0 +1,60 @@
+@model PetPlatform.Application.DTOs.VetVisitNoteDto
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Visit Note</h2>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Pet</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.PetName</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Visit Date</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.VisitDate.ToString("MMM dd, yyyy")</p>
+            </div>
+
+            <div class="border border-gray-200 rounded-md p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Subjective (Owner's Description)</h3>
+                <p class="text-sm text-gray-900 whitespace-pre-wrap">@Model.Subjective</p>
+            </div>
+
+            <div class="border border-gray-200 rounded-md p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Objective (Clinical Findings)</h3>
+                <p class="text-sm text-gray-900 whitespace-pre-wrap">@Model.Objective</p>
+            </div>
+
+            <div class="border border-gray-200 rounded-md p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Assessment (Diagnosis)</h3>
+                <p class="text-sm text-gray-900 whitespace-pre-wrap">@Model.Assessment</p>
+            </div>
+
+            <div class="border border-gray-200 rounded-md p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Plan (Treatment Plan)</h3>
+                <p class="text-sm text-gray-900 whitespace-pre-wrap">@Model.Plan</p>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Additional Notes</label>
+                    <p class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">@Model.Notes</p>
+                </div>
+            }
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Recorded By</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.VetUserName</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Created</label>
+                <p class="mt-1 text-sm text-gray-900">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</p>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200">
+            <a asp-area="Vet" asp-controller="Pets" asp-action="Details" asp-route-id="@Model.PetId"
+               class="text-blue-600 hover:text-blue-900 text-sm">&larr; Back to Pet</a>
+        </div>
+    </div>
+</div>

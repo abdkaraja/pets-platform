@@ -1,0 +1,61 @@
+@model PetPlatform.Application.DTOs.CreateVetVisitNoteDto
+
+<div class="max-w-2xl">
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800">Add Visit Note — @ViewData["PetName"]</h2>
+        </div>
+        <form asp-area="Vet" asp-controller="VisitNote" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="PetId" />
+            <div class="px-6 py-4 space-y-4">
+                <div asp-validation-summary="ModelOnly" class="text-red-600 text-sm"></div>
+
+                <div>
+                    <label asp-for="VisitDate" class="block text-sm font-medium text-gray-700">Visit Date *</label>
+                    <input asp-for="VisitDate" type="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm" />
+                    <span asp-validation-for="VisitDate" class="text-red-600 text-xs"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Subjective" class="block text-sm font-medium text-gray-700">Subjective (Owner's Description) *</label>
+                    <textarea asp-for="Subjective" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm"></textarea>
+                    <span asp-validation-for="Subjective" class="text-red-600 text-xs"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Objective" class="block text-sm font-medium text-gray-700">Objective (Clinical Findings) *</label>
+                    <textarea asp-for="Objective" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm"></textarea>
+                    <span asp-validation-for="Objective" class="text-red-600 text-xs"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Assessment" class="block text-sm font-medium text-gray-700">Assessment (Diagnosis) *</label>
+                    <textarea asp-for="Assessment" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm"></textarea>
+                    <span asp-validation-for="Assessment" class="text-red-600 text-xs"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Plan" class="block text-sm font-medium text-gray-700">Plan (Treatment Plan) *</label>
+                    <textarea asp-for="Plan" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm"></textarea>
+                    <span asp-validation-for="Plan" class="text-red-600 text-xs"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Notes" class="block text-sm font-medium text-gray-700">Additional Notes</label>
+                    <textarea asp-for="Notes" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 text-sm"></textarea>
+                    <span asp-validation-for="Notes" class="text-red-600 text-xs"></span>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 space-x-2">
+                <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm">
+                    Save Visit Note
+                </button>
+                <a asp-area="Vet" asp-controller="Pets" asp-action="Details" asp-route-id="@Model.PetId"
+                   class="inline-block bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 text-sm">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
