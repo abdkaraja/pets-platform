@@ -10,7 +10,7 @@ public class ProductVariant
     public string? Color { get; private set; }
     public decimal? Weight { get; private set; }
     public decimal PriceMultiplier { get; private set; }
-    [System.ComponentModel.DataAnnotations.Schema.ConcurrencyCheck]
+    [System.ComponentModel.DataAnnotations.ConcurrencyCheck]
     public int StockQuantity { get; private set; }
     public string? Sku { get; private set; }
 

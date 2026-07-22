@@ -106,8 +106,6 @@ public class OrderService : IOrderService
             }
             catch (DbUpdateConcurrencyException)
             {
-                _context.ChangeTracker.Clear();
-
                 // Re-fetch the cart items so that stock quantities reflect
                 // the persisted (post-reduce) values.
                 var refreshedVariants = cart.Items

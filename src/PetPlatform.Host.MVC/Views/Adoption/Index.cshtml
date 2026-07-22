@@ -31,7 +31,14 @@
                         <option value="">All Species</option>
                         @foreach (PetSpecies s in Enum.GetValues<PetSpecies>())
                         {
-                            <option value="@s" @(currentSpecies == s ? "selected" : "")>@s</option>
+                            if (currentSpecies == s)
+                            {
+                                <option value="@s" selected>@s</option>
+                            }
+                            else
+                            {
+                                <option value="@s">@s</option>
+                            }
                         }
                     </select>
                 </div>
