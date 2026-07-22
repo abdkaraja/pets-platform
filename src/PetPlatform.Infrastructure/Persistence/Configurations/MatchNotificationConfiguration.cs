@@ -30,12 +30,12 @@ public class MatchNotificationConfiguration : IEntityTypeConfiguration<MatchNoti
         builder.HasOne(n => n.MatchedReport)
             .WithMany(r => r.MatchNotificationsAsMatched)
             .HasForeignKey(n => n.MatchedReportId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(n => n.TriggeredReport)
             .WithMany(r => r.MatchNotificationsAsTriggered)
             .HasForeignKey(n => n.TriggeredReportId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(n => n.MatchedReportId);
         builder.HasIndex(n => n.TriggeredReportId);
